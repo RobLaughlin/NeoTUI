@@ -56,7 +56,13 @@ alias rm='rm -i'
 alias mv='mv -i'
 alias cp='cp -i'
 
+# ─── Markdown ────────────────────────────────────────────────
+# mdpreview: GitHub-style markdown preview in browser
+if command -v go-grip &>/dev/null; then
+    mdpreview() { go-grip "$@"; }
+fi
+
 # ─── Misc ────────────────────────────────────────────────────
 alias cls='clear'
-alias reload='source ~/.bashrc'
+alias reload='source ~/.zshrc'
 alias path='echo $PATH | tr ":" "\n"'

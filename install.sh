@@ -238,6 +238,24 @@ install_glow() {
     fi
 }
 
+# ─── go-grip (GitHub markdown preview) ───────────────────────
+install_gogrip() {
+    header "go-grip (GitHub markdown preview)"
+    if has go-grip; then
+        success "Already installed"
+        return
+    fi
+
+    if has go; then
+        info "Installing go-grip via go install..."
+        GOBIN="$LOCAL_BIN" go install github.com/chrishrb/go-grip@latest
+        success "go-grip installed"
+    else
+        error "Go not found - cannot install go-grip"
+        return 1
+    fi
+}
+
 # ─── carapace (shell completion) ─────────────────────────────
 install_carapace() {
     header "carapace"
@@ -350,6 +368,7 @@ main() {
     install_bat      || ((failures++)) || true
     install_eza      || ((failures++)) || true
     install_glow     || ((failures++)) || true
+    install_gogrip   || ((failures++)) || true
     install_carapace || ((failures++)) || true
     install_opencode || ((failures++)) || true
     symlink_configs
