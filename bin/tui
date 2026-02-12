@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# ============================================================
+# TUI Dev Environment - Launcher
+# Starts a tmux session with sidebar layout and full environment
+# ============================================================
+set -euo pipefail
+
+SESSION_NAME="tui"
+STATE_DIR="$HOME/.local/share/tui"
+WIDTH_FILE="$STATE_DIR/sidebar-width"
+DEFAULT_WIDTH=30
+START_DIR="${1:-.}"
+
+# Resolve to absolute path
+START_DIR="$(cd "$START_DIR" 2>/dev/null && pwd || echo "$PWD")"
+
+mkdir -p "$STATE_DIR"
+
+# Read persisted sidebar width
+load_width() {
+    if [[ -f "$WIDTH_FILE" ]]; then
+        local saved
+        saved=$(<"$WIDTH_FILE")
+        if [[ "$saved" =~ ^[0-9]+$ ]] && (( saved >= 10 && saved <= 200 )); then
+            echo "$saved"
+            return
+        fi
+    fi
+    echo "$DEFAULT_WIDTH"
+}
+
+# ─── Pre-flight checks ──────────────────────────────────────
+if ! command -v tmux &>/dev/null; then
+    echo "Error: tmux is not installed" >&2
+    exit 1
+fi
+
+if ! command -v lf &>/dev/null; then
+    echo "Warning: lf is not installed (sidebar will not work)" >&2
+    echo "Run install.sh to install dependencies" >&2
+fi
+
+# ─── Attach to existing session if it exists ─────────────────
+if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+    echo "Attaching to existing session '$SESSION_NAME'..."
+    exec tmux attach-session -t "$SESSION_NAME"
+fi
+
+# ─── Create new session ─────────────────────────────────────
+tmux new-session -d -s "$SESSION_NAME" -c "$START_DIR"
+
+# Set environment variables in the tmux session
+tmux set-environment -t "$SESSION_NAME" TUI_DIR "${TUI_DIR:-$(dirname "$(dirname "$(readlink -f "$0")")")}"
+
+# Rename the first window
+tmux rename-window -t "$SESSION_NAME:1" 'main'
+
+# Create sidebar pane with lf on the left (using saved width)
+if command -v lf &>/dev/null; then
+    SIDEBAR_WIDTH=$(load_width)
+    tmux split-window -t "$SESSION_NAME:1" -hb -l "$SIDEBAR_WIDTH" -c "$START_DIR" 'lf'
+    # Focus back to the right (main) pane
+    tmux select-pane -t "$SESSION_NAME:1" -R
+fi
+
+# Source the tmux config if not already loaded
+if [ -f "$HOME/.tmux.conf" ]; then
+    tmux source-file "$HOME/.tmux.conf" 2>/dev/null || true
+fi
+
+# ─── Attach ──────────────────────────────────────────────────
+exec tmux attach-session -t "$SESSION_NAME"

@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# ============================================================
+# TUI Dev Environment - Create New Window with lf Sidebar
+# Called from tmux keybind (prefix + c)
+# ============================================================
+
+STATE_DIR="$HOME/.local/share/tui"
+WIDTH_FILE="$STATE_DIR/sidebar-width"
+DEFAULT_WIDTH=30
+
+# Read saved sidebar width
+width=$DEFAULT_WIDTH
+if [ -f "$WIDTH_FILE" ]; then
+    saved=$(cat "$WIDTH_FILE")
+    if [[ "$saved" =~ ^[0-9]+$ ]] && [ "$saved" -ge 10 ] && [ "$saved" -le 200 ]; then
+        width=$saved
+    fi
+fi
+
+# Get the current pane's working directory
+CUR_DIR=$(tmux display-message -p '#{pane_current_path}')
+
+# Create new window with zsh
+tmux new-window -c "$CUR_DIR"
+
+# Add lf sidebar on the left
+if command -v lf &>/dev/null; then
+    tmux split-window -hb -l "$width" -c "$CUR_DIR" 'lf'
+    tmux select-pane -R
+fi

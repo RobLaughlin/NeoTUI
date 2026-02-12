@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# ============================================================
+# TUI Dev Environment - Toggle File Explorer Sidebar
+# Called from tmux keybind (prefix + E)
+# Persists sidebar width between toggles and across sessions.
+# ============================================================
+
+# Must be running inside tmux
+if [[ -z "${TMUX:-}" ]]; then
+    echo "Not in a tmux session" >&2
+    exit 1
+fi
+
+STATE_DIR="$HOME/.local/share/tui"
+WIDTH_FILE="$STATE_DIR/sidebar-width"
+DEFAULT_WIDTH=30
+
+mkdir -p "$STATE_DIR"
+
+# Read saved width, fall back to default
+load_width() {
+    if [[ -f "$WIDTH_FILE" ]]; then
+        local saved
+        saved=$(<"$WIDTH_FILE")
+        # Validate: must be a positive integer
+        if [[ "$saved" =~ ^[0-9]+$ ]] && (( saved >= 10 && saved <= 200 )); then
+            echo "$saved"
+            return
+        fi
+    fi
+    echo "$DEFAULT_WIDTH"
+}
+
+# Save the current width of a pane to disk
+save_width() {
+    local pane_id="$1"
+    local width
+    width=$(tmux display-message -t "$pane_id" -p '#{pane_width}')
+    if [[ "$width" =~ ^[0-9]+$ ]]; then
+        echo "$width" > "$WIDTH_FILE"
+    fi
+}
+
+# Check if there's a pane running lf in the current window
+LF_PANE=$(tmux list-panes -F '#{pane_id} #{pane_current_command}' \
+    | awk '$2 == "lf" { print $1; exit }')
+
+if [[ -n "$LF_PANE" ]]; then
+    # Sidebar is visible: save its width, then close it
+    save_width "$LF_PANE"
+    tmux kill-pane -t "$LF_PANE"
+else
+    # Sidebar is hidden: open it at the saved width
+    SIDEBAR_WIDTH=$(load_width)
+    CUR_DIR=$(tmux display-message -p '#{pane_current_path}')
+    tmux split-window -hb -l "$SIDEBAR_WIDTH" -c "$CUR_DIR" 'lf'
+    # Return focus to the right (main) pane
+    tmux select-pane -R
+fi

@@ -1,0 +1,274 @@
+# ============================================================
+# TUI Dev Environment - lf file manager configuration
+# ============================================================
+
+# ─── General Settings ────────────────────────────────────────
+set hidden true
+set icons true
+set ignorecase true
+set drawbox true
+set preview false
+set scrolloff 10
+set tabstop 4
+set info size:time
+set dircounts true
+set period 1
+
+# Single column by default (preview off); toggle-preview switches to 2:3
+set ratios 1
+
+# Shell settings
+set shell bash
+set shellopts '-eu'
+set ifs "\n"
+
+# Previewer
+set previewer ~/.config/lf/preview.sh
+
+# Prompt: simplified (no user@host), [WD] added dynamically by on-cd
+set promptfmt " \033[34;1m%d\033[0m\033[1m%f\033[0m"
+
+# ─── Working Directory Indicator + Shell Sync ────────────────
+# Shows [WD] when in the shell's working directory, or [WD]/rel/path
+# when inside a subdirectory of it. Updates on every directory change.
+# Also syncs the shell pane's working directory to match lf.
+cmd on-cd &{{
+    state_dir="$HOME/.local/share/tui"
+    mkdir -p "$state_dir"
+
+    pwd_file="$state_dir/shell-pwd"
+    shell_pwd=""
+    if [ -f "$pwd_file" ]; then
+        shell_pwd="$(cat "$pwd_file")"
+    fi
+
+    # ── Update prompt [WD] indicator ──
+    fmt=" \033[34;1m%d\033[0m\033[1m%f\033[0m"
+
+    if [ -n "$shell_pwd" ]; then
+        case "$PWD" in
+            "$shell_pwd")
+                fmt=" \033[32;1m[WD]\033[0m \033[34;1m%d\033[0m\033[1m%f\033[0m"
+                ;;
+            "$shell_pwd"/*)
+                rel=${PWD#$shell_pwd}
+                fmt=" \033[32;1m[WD]${rel}\033[0m \033[1m%f\033[0m"
+                ;;
+        esac
+    fi
+
+    lf -remote "send $id set promptfmt \"$fmt\""
+
+    # ── Sync shell pane to lf's directory ──
+    # Write lf's PWD so the shell hook can detect lf-initiated changes
+    printf '%s' "$PWD" > "$state_dir/lf-pwd"
+
+    # Only send cd if shell is in a different directory (breaks loops)
+    if [ -n "${TMUX:-}" ] && [ "$PWD" != "$shell_pwd" ]; then
+        # Find the main pane (any pane NOT running lf)
+        main_pane=$(tmux list-panes -F '#{pane_id} #{pane_current_command}' \
+            | grep -v ' lf$' | head -1 | awk '{print $1}')
+
+        if [ -n "$main_pane" ]; then
+            main_cmd=$(tmux display-message -t "$main_pane" -p '#{pane_current_command}')
+            case "$main_cmd" in
+                zsh|bash|sh|fish)
+                    # Shell is at a prompt — clear line, cd, press Enter
+                    escaped=$(printf '%s' "$PWD" | sed "s/'/'\\\\''/g")
+                    tmux send-keys -t "$main_pane" C-u
+                    tmux send-keys -t "$main_pane" "cd '${escaped}'" Enter
+                    ;;
+                # If nvim or another program is running, skip — don't disrupt it
+            esac
+        fi
+    fi
+}}
+
+# Trigger on-cd at startup to set the initial prompt
+on-cd
+
+# ─── Preview Toggle ──────────────────────────────────────────
+# Preview is off by default. Press zp to toggle it on/off.
+# Uses &{{ }} (async) so lf isn't blocked while receiving commands.
+cmd toggle-preview &{{
+    if [ -f /tmp/lf-preview-on ]; then
+        rm -f /tmp/lf-preview-on
+        lf -remote "send $id set nopreview"
+        lf -remote "send $id set ratios 1"
+    else
+        touch /tmp/lf-preview-on
+        lf -remote "send $id set ratios 2:3"
+        lf -remote "send $id set preview"
+    fi
+}}
+
+# ─── Custom Commands ────────────────────────────────────────
+
+# Open file in nvim in the main tmux pane (Enter on files)
+# Directories are handled natively by lf (Enter navigates into them)
+cmd open &{{
+    # Only handle files, not directories
+    if [ -d "$f" ]; then
+        lf -remote "send $id cd '$f'"
+        exit 0
+    fi
+
+    filepath="$(realpath "$f")"
+
+    case $(file --mime-type -Lb "$f") in
+        text/*|application/json|application/javascript|application/xml|\
+        application/x-shellscript|inode/x-empty|application/x-empty|\
+        application/toml|application/x-yaml)
+            if [ -n "${TMUX:-}" ]; then
+                # Find the main pane: any pane NOT running lf
+                main_pane=$(tmux list-panes -F '#{pane_id} #{pane_current_command}' \
+                    | grep -v ' lf$' | head -1 | awk '{print $1}')
+
+                if [ -z "$main_pane" ]; then
+                    # No non-lf pane exists; create one to the right
+                    tmux split-window -h -c "$(dirname "$filepath")" "nvim '$filepath'"
+                    exit 0
+                fi
+
+                main_cmd=$(tmux display-message -t "$main_pane" -p '#{pane_current_command}')
+                escaped=$(printf '%s' "$filepath" | sed 's/ /\\ /g')
+
+                case "$main_cmd" in
+                    nvim|nvim.appimage)
+                        # Nvim already running: open in a vertical split
+                        tmux send-keys -t "$main_pane" Escape
+                        sleep 0.05
+                        tmux send-keys -t "$main_pane" ":vsplit $escaped" Enter
+                        ;;
+                    *)
+                        # Shell prompt: launch nvim
+                        tmux send-keys -t "$main_pane" "nvim '$filepath'" Enter
+                        ;;
+                esac
+            else
+                nvim "$filepath"
+            fi
+            ;;
+        *)
+            xdg-open "$f" 2>/dev/null &
+            ;;
+    esac
+}}
+
+# Open file in nvim in a new tmux window/tab (Shift+Enter)
+cmd open-tab &{{
+    if [ -d "$f" ]; then
+        exit 0
+    fi
+
+    filepath="$(realpath "$f")"
+
+    case $(file --mime-type -Lb "$f") in
+        text/*|application/json|application/javascript|application/xml|\
+        application/x-shellscript|inode/x-empty|application/x-empty|\
+        application/toml|application/x-yaml)
+            if [ -n "${TMUX:-}" ]; then
+                tmux new-window -n "$(basename "$f")" "nvim '$filepath'"
+            else
+                lf -remote "send $id \$nvim '$filepath'"
+            fi
+            ;;
+    esac
+}}
+
+# Create directory
+cmd mkdir %{{
+    printf "Directory name: "
+    read -r dir
+    mkdir -p "$dir"
+    lf -remote "send reload"
+}}
+
+# Create file
+cmd touch %{{
+    printf "File name: "
+    read -r file
+    touch "$file"
+    lf -remote "send reload"
+}}
+
+# Trash/delete with confirmation
+cmd trash %{{
+    set -f
+    printf "Trash %s? [y/N] " "$fx"
+    read -r ans
+    if [ "$ans" = "y" ] || [ "$ans" = "Y" ]; then
+        echo "$fx" | while IFS= read -r file; do
+            rm -rf "$file"
+        done
+        lf -remote "send reload"
+    fi
+}}
+
+# Bulk rename with editor
+cmd bulk-rename ${{
+    old="$(mktemp)"
+    new="$(mktemp)"
+    if [ -n "$fs" ]; then
+        fs="$(basename -a $fs)"
+    else
+        fs="$(ls)"
+    fi
+    printf '%s\n' "$fs" > "$old"
+    printf '%s\n' "$fs" > "$new"
+    $EDITOR "$new"
+    [ "$(wc -l < "$new")" -ne "$(wc -l < "$old")" ] && exit
+    paste "$old" "$new" | while IFS="$(printf '\t')" read -r src dst; do
+        if [ "$src" = "$dst" ] || [ -e "$dst" ]; then
+            continue
+        fi
+        mv -- "$src" "$dst"
+    done
+    rm -f "$old" "$new"
+    lf -remote "send reload"
+}}
+
+# Copy file path to clipboard
+cmd yank-path ${{
+    printf '%s' "$f" | clip.exe 2>/dev/null || printf '%s' "$f" | xclip -selection clipboard 2>/dev/null
+    lf -remote "send echo 'Path copied to clipboard'"
+}}
+
+# ─── Key Bindings ────────────────────────────────────────────
+
+# Remove some defaults
+map d
+map m
+map y
+
+# File operations
+map dd trash
+map dD delete
+map yy copy
+map yp yank-path
+map pp paste
+map md mkdir
+map mf touch
+map r rename
+map R bulk-rename
+
+# Navigation
+map . set hidden!
+map gh cd ~
+map gp cd ~/projects
+map gd cd ~/Documents
+map gD cd ~/Downloads
+map g/ cd /
+
+# Preview toggle
+map zp toggle-preview
+
+# Open
+map <enter> open
+map o open
+map <s-enter> open-tab
+map O open-tab
+map <c-r> reload
+
+# ─── Bookmarks ──────────────────────────────────────────────
+# Quick access with 'g' prefix handled above
