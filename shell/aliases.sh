@@ -62,6 +62,16 @@ if command -v go-grip &>/dev/null; then
     mdpreview() { go-grip "$@"; }
 fi
 
+# ─── lf Sync ─────────────────────────────────────────────────
+# sync: tell lf sidebar to navigate to the shell's current directory
+sync() {
+    if [[ -n "${TMUX:-}" ]] && command -v lf &>/dev/null; then
+        lf -remote "send :cd '$PWD'; on-cd" 2>/dev/null && echo "lf → $PWD"
+    else
+        echo "Not in a tmux session or lf not installed"
+    fi
+}
+
 # ─── Misc ────────────────────────────────────────────────────
 alias cls='clear'
 alias reload='source ~/.zshrc'

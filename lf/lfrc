@@ -28,21 +28,18 @@ set previewer ~/.config/lf/preview.sh
 # Prompt: simplified (no user@host), [WD] added dynamically by on-cd
 set promptfmt " \033[34;1m%d\033[0m\033[1m%f\033[0m"
 
-# ─── Working Directory Indicator + Shell Sync ────────────────
+# ─── Working Directory Indicator ─────────────────────────────
 # Shows [WD] when in the shell's working directory, or [WD]/rel/path
 # when inside a subdirectory of it. Updates on every directory change.
-# Also syncs the shell pane's working directory to match lf.
 cmd on-cd &{{
     state_dir="$HOME/.local/share/neotui"
-    mkdir -p "$state_dir"
-
     pwd_file="$state_dir/shell-pwd"
     shell_pwd=""
     if [ -f "$pwd_file" ]; then
         shell_pwd="$(cat "$pwd_file")"
     fi
 
-    # ── Update prompt [WD] indicator ──
+    # Update prompt [WD] indicator
     fmt=" \033[34;1m%d\033[0m\033[1m%f\033[0m"
 
     if [ -n "$shell_pwd" ]; then
@@ -58,30 +55,42 @@ cmd on-cd &{{
     fi
 
     lf -remote "send $id set promptfmt \"$fmt\""
+}}
 
-    # ── Sync shell pane to lf's directory ──
-    # Write lf's PWD so the shell hook can detect lf-initiated changes
-    printf '%s' "$PWD" > "$state_dir/lf-pwd"
+# ─── Sync Shell (S) ──────────────────────────────────────────
+# cd the first idle shell pane to lf's current directory.
+# Skips panes running opencode or other programs as children.
+cmd sync-shell &{{
+    [ -z "${TMUX:-}" ] && exit 0
 
-    # Only send cd if shell is in a different directory (breaks loops)
-    if [ -n "${TMUX:-}" ] && [ "$PWD" != "$shell_pwd" ]; then
-        # Find the main pane (any pane NOT running lf)
-        main_pane=$(tmux list-panes -F '#{pane_id} #{pane_current_command}' \
-            | grep -v ' lf$' | head -1 | awk '{print $1}')
+    # Find the first shell pane that is actually idle (no child processes
+    # like opencode/nvim running inside it)
+    pane_id=""
+    for entry in $(tmux list-panes -F '#{pane_pid}:#{pane_id}:#{pane_current_command}'); do
+        p_pid=$(echo "$entry" | cut -d: -f1)
+        p_id=$(echo "$entry" | cut -d: -f2)
+        p_cmd=$(echo "$entry" | cut -d: -f3)
+        case "$p_cmd" in
+            zsh|bash|sh|fish)
+                # Check this shell doesn't have a TUI child (opencode, nvim, etc.)
+                child=$(ps --ppid "$p_pid" -o comm= 2>/dev/null | head -1)
+                if [ -z "$child" ]; then
+                    pane_id="$p_id"
+                    break
+                fi
+                ;;
+        esac
+    done
 
-        if [ -n "$main_pane" ]; then
-            main_cmd=$(tmux display-message -t "$main_pane" -p '#{pane_current_command}')
-            case "$main_cmd" in
-                zsh|bash|sh|fish)
-                    # Shell is at a prompt — clear line, cd, press Enter
-                    escaped=$(printf '%s' "$PWD" | sed "s/'/'\\\\''/g")
-                    tmux send-keys -t "$main_pane" C-u
-                    tmux send-keys -t "$main_pane" "cd '${escaped}'" Enter
-                    ;;
-                # If nvim or another program is running, skip — don't disrupt it
-            esac
-        fi
+    if [ -z "$pane_id" ]; then
+        lf -remote "send $id echo 'No idle shell pane found'"
+        exit 0
     fi
+
+    escaped=$(printf '%s' "$PWD" | sed "s/'/'\\\\''/g")
+    tmux send-keys -t "$pane_id" C-u
+    tmux send-keys -t "$pane_id" "cd '${escaped}'" Enter
+    lf -remote "send $id echo 'Shell → $PWD'"
 }}
 
 # Trigger on-cd at startup to set the initial prompt
@@ -262,6 +271,9 @@ map g/ cd /
 
 # Preview toggle
 map zp toggle-preview
+
+# Sync shell pane to lf's current directory
+map S sync-shell
 
 # Open
 map <enter> open
