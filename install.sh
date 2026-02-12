@@ -92,8 +92,8 @@ install_neovim() {
         return
     fi
 
-    # Ubuntu 20.04 has glibc 2.31. Neovim 0.11+ requires glibc 2.32+.
-    # v0.10.4 is the newest version with glibc 2.31 support (AppImage).
+    # Neovim 0.11+ requires glibc 2.32+. v0.10.4 is the newest release
+    # that works on older systems (glibc 2.17+), maximizing compatibility.
     local nvim_version="v0.10.4"
     info "Installing Neovim $nvim_version (AppImage)..."
 
@@ -129,9 +129,25 @@ install_zsh() {
     info "Installing zsh (requires sudo)..."
     if has apt-get; then
         sudo apt-get update -qq && sudo apt-get install -y -qq zsh
+    elif has dnf; then
+        sudo dnf install -y -q zsh
+    elif has pacman; then
+        sudo pacman -S --noconfirm --needed zsh
+    elif has apk; then
+        sudo apk add --quiet zsh
+    elif has zypper; then
+        sudo zypper install -y -q zsh
+    elif has brew; then
+        brew install zsh
+    else
+        error "Could not detect package manager. Install zsh manually and re-run."
+        return 1
+    fi
+
+    if has zsh; then
         success "zsh installed: $(zsh --version)"
     else
-        error "Could not install zsh (apt-get not found). Install manually."
+        error "zsh installation failed"
         return 1
     fi
 }
