@@ -1,5 +1,5 @@
 # ============================================================
-# TUI Dev Environment - Environment Setup (zsh)
+# NeoTUI - Environment Setup (zsh)
 # ============================================================
 
 # ─── Flush stale terminal input (early) ─────────────────────

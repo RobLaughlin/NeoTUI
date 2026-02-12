@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # ============================================================
-# TUI Dev Environment - Installer
+# NeoTUI - Installer
 # Installs all dependencies and symlinks configurations
 # ============================================================
 set -euo pipefail
 
-TUI_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+NEOTUI_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOCAL_DIR="$HOME/.local"
 LOCAL_BIN="$LOCAL_DIR/bin"
 CONFIG_DIR="$HOME/.config"
@@ -273,45 +273,51 @@ symlink_configs() {
     header "Symlinking configurations"
 
     # tmux
-    ln -sf "$TUI_DIR/tmux/tmux.conf" "$HOME/.tmux.conf"
+    ln -sf "$NEOTUI_DIR/tmux/tmux.conf" "$HOME/.tmux.conf"
     success "tmux.conf -> ~/.tmux.conf"
 
     # Neovim
     rm -rf "$CONFIG_DIR/nvim"
-    ln -sf "$TUI_DIR/nvim" "$CONFIG_DIR/nvim"
+    ln -sf "$NEOTUI_DIR/nvim" "$CONFIG_DIR/nvim"
     success "nvim/ -> ~/.config/nvim/"
 
     # lf
     mkdir -p "$CONFIG_DIR/lf"
-    ln -sf "$TUI_DIR/lf/lfrc" "$CONFIG_DIR/lf/lfrc"
-    ln -sf "$TUI_DIR/lf/preview.sh" "$CONFIG_DIR/lf/preview.sh"
+    ln -sf "$NEOTUI_DIR/lf/lfrc" "$CONFIG_DIR/lf/lfrc"
+    ln -sf "$NEOTUI_DIR/lf/preview.sh" "$CONFIG_DIR/lf/preview.sh"
     success "lf config -> ~/.config/lf/"
 
     # Launcher and helper scripts
-    ln -sf "$TUI_DIR/bin/tui" "$LOCAL_BIN/tui"
-    ln -sf "$TUI_DIR/bin/tui-toggle-sidebar" "$LOCAL_BIN/tui-toggle-sidebar"
-    ln -sf "$TUI_DIR/bin/tui-new-window" "$LOCAL_BIN/tui-new-window"
+    ln -sf "$NEOTUI_DIR/bin/neotui" "$LOCAL_BIN/neotui"
+    ln -sf "$NEOTUI_DIR/bin/neotui-toggle-sidebar" "$LOCAL_BIN/neotui-toggle-sidebar"
+    ln -sf "$NEOTUI_DIR/bin/neotui-new-window" "$LOCAL_BIN/neotui-new-window"
     success "bin scripts -> ~/.local/bin/"
 
-    # Remove old bash integration (shell configs are now zsh-specific)
-    local marker="# >>> tui-dev-env >>>"
-    local end_marker="# <<< tui-dev-env <<<"
-    if grep -q "$marker" "$HOME/.bashrc" 2>/dev/null; then
-        sed -i "/$marker/,/$end_marker/d" "$HOME/.bashrc"
-        success "Removed old bash integration from ~/.bashrc"
+    # Remove old tui-dev-env integration from .bashrc and .zshrc
+    local old_marker="# >>> tui-dev-env >>>"
+    local old_end="# <<< tui-dev-env <<<"
+    if grep -q "$old_marker" "$HOME/.bashrc" 2>/dev/null; then
+        sed -i "/$old_marker/,/$old_end/d" "$HOME/.bashrc"
+        success "Removed old tui-dev-env block from ~/.bashrc"
+    fi
+    if grep -q "$old_marker" "$HOME/.zshrc" 2>/dev/null; then
+        sed -i "/$old_marker/,/$old_end/d" "$HOME/.zshrc"
+        success "Removed old tui-dev-env block from ~/.zshrc"
     fi
 
     # Shell integration in .zshrc
+    local marker="# >>> neotui >>>"
+    local end_marker="# <<< neotui <<<"
     if ! grep -q "$marker" "$HOME/.zshrc" 2>/dev/null; then
         cat >> "$HOME/.zshrc" << ZSHEOF
 
 $marker
-export TUI_DIR="$TUI_DIR"
+export NEOTUI_DIR="$NEOTUI_DIR"
 export PATH="\$HOME/.local/bin:\$PATH"
-source "$TUI_DIR/shell/env.sh"
-source "$TUI_DIR/shell/vi-mode.sh"
-source "$TUI_DIR/shell/hooks.sh"
-source "$TUI_DIR/shell/aliases.sh"
+source "$NEOTUI_DIR/shell/env.sh"
+source "$NEOTUI_DIR/shell/vi-mode.sh"
+source "$NEOTUI_DIR/shell/hooks.sh"
+source "$NEOTUI_DIR/shell/aliases.sh"
 # Plugins (syntax-highlighting must be last)
 [[ -f "\$HOME/.local/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh" ]] && \\
     source "\$HOME/.local/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh"
@@ -329,7 +335,7 @@ ZSHEOF
 main() {
     echo -e "${BOLD}"
     echo "╔══════════════════════════════════════════╗"
-    echo "║     TUI Dev Environment - Installer      ║"
+    echo "║          NeoTUI  -  Installer             ║"
     echo "╚══════════════════════════════════════════╝"
     echo -e "${NC}"
 
@@ -362,11 +368,11 @@ main() {
     echo "     Recommended: JetBrainsMono Nerd Font"
     echo "     Download: https://www.nerdfonts.com/font-downloads"
     echo ""
-    echo -e "  ${BOLD}2.${NC} Start a zsh shell (or launch tui which uses zsh automatically):"
+    echo -e "  ${BOLD}2.${NC} Start a zsh shell (or launch neotui which uses zsh automatically):"
     echo "     zsh"
     echo ""
     echo -e "  ${BOLD}3.${NC} Launch the TUI environment:"
-    echo "     tui"
+    echo "     neotui"
     echo ""
     echo -e "  ${BOLD}4.${NC} First launch of Neovim will auto-install plugins & LSP servers."
     echo "     Run 'nvim' and wait for installation to complete."
@@ -379,7 +385,7 @@ main() {
     echo "     e. Paste the token back into Neovim"
     echo "     f. Done! AI ghost text suggestions will appear as you type."
     echo ""
-    echo -e "  ${BOLD}Tip:${NC} Run ${GREEN}tui -h${NC} or ${GREEN}tui --help${NC} for a full keybinding reference."
+    echo -e "  ${BOLD}Tip:${NC} Run ${GREEN}neotui -h${NC} or ${GREEN}neotui --help${NC} for a full keybinding reference."
     echo ""
 }
 

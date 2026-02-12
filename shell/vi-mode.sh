@@ -1,5 +1,5 @@
 # ============================================================
-# TUI Dev Environment - Zsh Vi-Mode & Prompt
+# NeoTUI - Zsh Vi-Mode & Prompt
 # ============================================================
 
 # ─── Flush stale terminal input ─────────────────────────────
@@ -75,11 +75,11 @@ autoload -Uz add-zsh-hook
 # ─── One-shot input flush before first prompt ───────────────
 # Catches DA responses that arrive while config files were loading.
 # Runs once, then removes itself.
-_tui_flush_once() {
+_neotui_flush_once() {
     while read -t 0 -k 1 2>/dev/null; do :; done
-    add-zsh-hook -d precmd _tui_flush_once
+    add-zsh-hook -d precmd _neotui_flush_once
 }
-add-zsh-hook precmd _tui_flush_once
+add-zsh-hook precmd _neotui_flush_once
 
 # ─── Prompt (Neon Blue Theme) ───────────────────────────────
 # Colors:
@@ -92,8 +92,8 @@ autoload -Uz vcs_info
 zstyle ':vcs_info:git:*' formats ' (%b)'
 zstyle ':vcs_info:*' enable git
 
-_tui_precmd_vcs() { vcs_info }
-add-zsh-hook precmd _tui_precmd_vcs
+_neotui_precmd_vcs() { vcs_info }
+add-zsh-hook precmd _neotui_precmd_vcs
 
 setopt PROMPT_SUBST
 

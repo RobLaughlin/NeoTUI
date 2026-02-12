@@ -1,5 +1,5 @@
 # ============================================================
-# TUI Dev Environment - lf file manager configuration
+# NeoTUI - lf file manager configuration
 # ============================================================
 
 # ─── General Settings ────────────────────────────────────────
@@ -33,7 +33,7 @@ set promptfmt " \033[34;1m%d\033[0m\033[1m%f\033[0m"
 # when inside a subdirectory of it. Updates on every directory change.
 # Also syncs the shell pane's working directory to match lf.
 cmd on-cd &{{
-    state_dir="$HOME/.local/share/tui"
+    state_dir="$HOME/.local/share/neotui"
     mkdir -p "$state_dir"
 
     pwd_file="$state_dir/shell-pwd"

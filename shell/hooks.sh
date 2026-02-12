@@ -1,21 +1,21 @@
 # ============================================================
-# TUI Dev Environment - Shell Hooks (zsh)
+# NeoTUI - Shell Hooks (zsh)
 # Bidirectional directory sync between shell and lf sidebar
 # ============================================================
 
-__tui_state_dir="$HOME/.local/share/tui"
+__neotui_state_dir="$HOME/.local/share/neotui"
 
-__tui_sync_sidebar() {
+__neotui_sync_sidebar() {
     # Only run inside tmux
     [[ -z "${TMUX:-}" ]] && return
 
     # Write current working directory to state file
-    mkdir -p "$__tui_state_dir"
-    printf '%s' "$PWD" > "$__tui_state_dir/shell-pwd"
+    mkdir -p "$__neotui_state_dir"
+    printf '%s' "$PWD" > "$__neotui_state_dir/shell-pwd"
 
     # Read lf's current directory to detect who initiated the change
     local lf_pwd=""
-    [[ -f "$__tui_state_dir/lf-pwd" ]] && lf_pwd="$(<"$__tui_state_dir/lf-pwd")"
+    [[ -f "$__neotui_state_dir/lf-pwd" ]] && lf_pwd="$(<"$__neotui_state_dir/lf-pwd")"
 
     if command -v lf &>/dev/null; then
         if [[ "$PWD" != "$lf_pwd" ]]; then
@@ -31,12 +31,12 @@ __tui_sync_sidebar() {
 
 # Use zsh's chpwd hook (fires on every directory change)
 autoload -Uz add-zsh-hook
-add-zsh-hook chpwd __tui_sync_sidebar
+add-zsh-hook chpwd __neotui_sync_sidebar
 
 # Write initial PWD on shell startup
 if [[ -n "${TMUX:-}" ]]; then
-    mkdir -p "$__tui_state_dir"
-    printf '%s' "$PWD" > "$__tui_state_dir/shell-pwd"
+    mkdir -p "$__neotui_state_dir"
+    printf '%s' "$PWD" > "$__neotui_state_dir/shell-pwd"
     # Sync lf on startup too
     if command -v lf &>/dev/null; then
         lf -remote "send :cd '$PWD'; on-cd" 2>/dev/null || true

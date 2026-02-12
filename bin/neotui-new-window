@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # ============================================================
-# TUI Dev Environment - Create New Window with lf Sidebar
+# NeoTUI - Create New Window with lf Sidebar
 # Called from tmux keybind (prefix + c)
 # ============================================================
 
-STATE_DIR="$HOME/.local/share/tui"
+STATE_DIR="$HOME/.local/share/neotui"
 WIDTH_FILE="$STATE_DIR/sidebar-width"
 DEFAULT_WIDTH=30
 

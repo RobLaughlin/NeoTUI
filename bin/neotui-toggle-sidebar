@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# TUI Dev Environment - Toggle File Explorer Sidebar
+# NeoTUI - Toggle File Explorer Sidebar
 # Called from tmux keybind (prefix + E)
 # Persists sidebar width between toggles and across sessions.
 # ============================================================
@@ -11,7 +11,7 @@ if [[ -z "${TMUX:-}" ]]; then
     exit 1
 fi
 
-STATE_DIR="$HOME/.local/share/tui"
+STATE_DIR="$HOME/.local/share/neotui"
 WIDTH_FILE="$STATE_DIR/sidebar-width"
 DEFAULT_WIDTH=30
 

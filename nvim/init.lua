@@ -1,5 +1,5 @@
 -- ============================================================
--- TUI Dev Environment - Neovim Configuration
+-- NeoTUI - Neovim Configuration
 -- ============================================================
 
 -- Set leader key before anything else

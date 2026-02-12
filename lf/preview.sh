@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# TUI Dev Environment - lf file previewer
+# NeoTUI - lf file previewer
 # Uses bat for syntax highlighting, falls back to head
 # ============================================================
 
