@@ -42,10 +42,9 @@ opt.swapfile = false
 opt.backup = false
 opt.writebackup = false
 
--- ─── Clipboard (WSL2 compatible) ───────────────────────────
+-- ─── Clipboard (WSL2, Wayland, X11 compatible) ───────────────
 opt.clipboard = "unnamedplus"
 
--- WSL2: use clip.exe to copy and powershell.exe to paste
 if vim.fn.has("wsl") == 1 then
   vim.g.clipboard = {
     name = "WslClipboard",
@@ -56,6 +55,19 @@ if vim.fn.has("wsl") == 1 then
     paste = {
       ["+"] = 'powershell.exe -NoLogo -NoProfile -c [Console]::Out.Write($(Get-Clipboard -Raw).tostring().replace("`r", ""))',
       ["*"] = 'powershell.exe -NoLogo -NoProfile -c [Console]::Out.Write($(Get-Clipboard -Raw).tostring().replace("`r", ""))',
+    },
+    cache_enabled = 0,
+  }
+elseif vim.fn.executable("wl-copy") == 1 then
+  vim.g.clipboard = {
+    name = "WaylandClipboard",
+    copy = {
+      ["+"] = "wl-copy",
+      ["*"] = "wl-copy",
+    },
+    paste = {
+      ["+"] = "wl-paste --no-newline",
+      ["*"] = "wl-paste --no-newline",
     },
     cache_enabled = 0,
   }

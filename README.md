@@ -30,6 +30,23 @@ neotui
 
 On first launch, Neovim will auto-install plugins and language servers — give it a minute.
 
+## Installer Options
+
+```bash
+./install.sh                    # Standard installation
+./install.sh --skip-unsupported # Skip tools unavailable for your architecture
+```
+
+The `--skip-unsupported` flag is useful on less common architectures (e.g., older ARM systems) where some pre-built binaries aren't available. Without this flag, the installer will error if a tool lacks support for your CPU architecture.
+
+### Supported Architectures
+
+| Architecture | Status |
+|-------------|--------|
+| x86_64 | Full support |
+| ARM64 (aarch64) | Full support |
+| ARMv7 | Most tools supported |
+
 ## Setting Up AI Autocompletion
 
 NeoTUI comes with **Codeium** (by Windsurf) for free AI code suggestions — multi-line ghost text that appears as you type, similar to Cursor or Copilot.

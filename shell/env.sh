@@ -19,12 +19,15 @@ export PAGER="less"
 # ─── Path ────────────────────────────────────────────────────
 export PATH="$HOME/.local/bin:$PATH"
 
-# Go
-if [[ -d "/usr/local/go/bin" ]]; then
-    export PATH="/usr/local/go/bin:$PATH"
-fi
+# Go (check ~/.local/go first, then system location)
 export GOPATH="${GOPATH:-$HOME/go}"
-export PATH="$GOPATH/bin:$PATH"
+if [[ -d "$HOME/.local/go/bin" ]]; then
+    export PATH="$HOME/.local/go/bin:$GOPATH/bin:$PATH"
+elif [[ -d "/usr/local/go/bin" ]]; then
+    export PATH="/usr/local/go/bin:$GOPATH/bin:$PATH"
+else
+    export PATH="$GOPATH/bin:$PATH"
+fi
 
 # ─── Zsh Options ────────────────────────────────────────────
 setopt AUTO_CD              # cd by typing directory name

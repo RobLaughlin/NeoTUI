@@ -239,7 +239,7 @@ cmd bulk-rename ${{
 
 # Copy file path to clipboard
 cmd yank-path ${{
-    printf '%s' "$f" | clip.exe 2>/dev/null || printf '%s' "$f" | xclip -selection clipboard 2>/dev/null
+    printf '%s' "$f" | clip.exe 2>/dev/null || wl-copy 2>/dev/null || xclip -selection clipboard 2>/dev/null
     lf -remote "send echo 'Path copied to clipboard'"
 }}
 

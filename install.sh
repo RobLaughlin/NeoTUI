@@ -5,6 +5,15 @@
 # ============================================================
 set -euo pipefail
 
+# Command-line flags
+SKIP_UNSUPPORTED=0
+
+for arg in "$@"; do
+    case "$arg" in
+        --skip-unsupported) SKIP_UNSUPPORTED=1 ;;
+    esac
+done
+
 NEOTUI_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOCAL_DIR="$HOME/.local"
 LOCAL_BIN="$LOCAL_DIR/bin"
@@ -25,6 +34,28 @@ error()   { echo -e "${RED} ✗${NC}  $*" >&2; }
 header()  { echo -e "\n${BOLD}━━━ $* ━━━${NC}"; }
 
 has() { command -v "$1" &>/dev/null; }
+
+# Get architecture suffix for GitHub releases
+get_arch_suffix() {
+    local arch
+    arch=$(uname -m)
+    case "$arch" in
+        x86_64)  echo "x86_64-unknown-linux-musl" ;;
+        aarch64) echo "aarch64-unknown-linux-musl" ;;
+        armv7l)  echo "armv7-unknown-linux-musleabihf" ;;
+        *)       return 1 ;;
+    esac
+}
+
+# Get system architecture name for display
+get_arch_name() {
+    case "$(uname -m)" in
+        x86_64)  echo "x86_64" ;;
+        aarch64) echo "ARM64" ;;
+        armv7l)  echo "ARMv7" ;;
+        *)       echo "unknown" ;;
+    esac
+}
 
 mkdir -p "$LOCAL_BIN" "$CONFIG_DIR"
 export PATH="$LOCAL_BIN:$PATH"
@@ -152,6 +183,110 @@ install_zsh() {
     fi
 }
 
+install_tmux() {
+    header "tmux"
+    
+    local min_major=3 min_minor=0
+    
+    if has tmux; then
+        local version
+        version=$(tmux -V | grep -oE '[0-9]+\.[0-9]+' | head -1)
+        local major minor
+        major=$(echo "$version" | cut -d. -f1)
+        minor=$(echo "$version" | cut -d. -f2)
+        
+        if (( major > min_major )) || { (( major == min_major )) && (( minor >= min_minor )); }; then
+            success "Already installed: $(tmux -V)"
+            return 0
+        else
+            warn "tmux $version installed, but $min_major.$min_minor+ required"
+            info "Upgrading tmux..."
+        fi
+    fi
+
+    info "Installing tmux (requires sudo)..."
+    if has apt-get; then
+        sudo apt-get update -qq && sudo apt-get install -y -qq tmux
+    elif has dnf; then
+        sudo dnf install -y -q tmux
+    elif has pacman; then
+        sudo pacman -S --noconfirm --needed tmux
+    elif has apk; then
+        sudo apk add --quiet tmux
+    elif has zypper; then
+        sudo zypper install -y -q tmux
+    elif has brew; then
+        brew install tmux
+    else
+        error "Could not detect package manager. Install tmux 3.0+ manually and re-run."
+        return 1
+    fi
+
+    if has tmux; then
+        success "tmux installed: $(tmux -V)"
+    else
+        error "tmux installation failed"
+        return 1
+    fi
+}
+
+install_go() {
+    header "Go"
+    
+    if has go; then
+        success "Already installed: $(go version)"
+        return 0
+    fi
+
+    local arch
+    arch=$(uname -m)
+    local goarch
+    case "$arch" in
+        x86_64)  goarch="amd64" ;;
+        aarch64) goarch="arm64" ;;
+        armv7l)  goarch="armv6l" ;;
+        *)
+            if [[ $SKIP_UNSUPPORTED -eq 1 ]]; then
+                warn "Go: unsupported architecture $arch, skipping"
+                return 0
+            else
+                error "Go: unsupported architecture $arch"
+                error "Use --skip-unsupported to continue without Go"
+                return 1
+            fi
+            ;;
+    esac
+
+    info "Installing Go for $arch to ~/.local/go..."
+    local go_version="1.22.0"
+    local url="https://go.dev/dl/go${go_version}.linux-${goarch}.tar.gz"
+
+    local tmp_dir
+    tmp_dir=$(mktemp -d)
+    
+    if curl -sL "$url" -o "$tmp_dir/go.tar.gz"; then
+        mkdir -p "$HOME/.local"
+        rm -rf "$HOME/.local/go"
+        tar -C "$HOME/.local" -xzf "$tmp_dir/go.tar.gz"
+        rm -rf "$tmp_dir"
+        
+        export PATH="$HOME/.local/go/bin:$PATH"
+        export GOPATH="${GOPATH:-$HOME/go}"
+        export PATH="$GOPATH/bin:$PATH"
+        
+        if has go; then
+            success "Go installed: $(go version)"
+        else
+            error "Go installed but not in PATH"
+            return 1
+        fi
+    else
+        error "Failed to download Go"
+        rm -rf "$tmp_dir"
+        return 1
+    fi
+}
+
 install_zsh_plugins() {
     header "zsh plugins (autosuggestions + syntax-highlighting)"
     local plugin_dir="$HOME/.local/share/zsh/plugins"
@@ -215,25 +350,75 @@ install_fzf() {
 # ─── ripgrep ─────────────────────────────────────────────────
 install_ripgrep() {
     header "ripgrep"
-    install_from_github rg BurntSushi/ripgrep "x86_64-unknown-linux-musl.tar.gz" rg
+    local suffix
+    if ! suffix=$(get_arch_suffix); then
+        if [[ $SKIP_UNSUPPORTED -eq 1 ]]; then
+            warn "ripgrep: $(uname -m) not supported, skipping"
+            return 0
+        else
+            error "ripgrep: $(uname -m) not supported"
+            error "Use --skip-unsupported to continue"
+            return 1
+        fi
+    fi
+    install_from_github rg BurntSushi/ripgrep "${suffix}.tar.gz" rg
 }
 
 # ─── fd ──────────────────────────────────────────────────────
 install_fd() {
     header "fd"
-    install_from_github fd sharkdp/fd "x86_64-unknown-linux-musl.tar.gz" fd
+    local suffix
+    if ! suffix=$(get_arch_suffix); then
+        if [[ $SKIP_UNSUPPORTED -eq 1 ]]; then
+            warn "fd: $(uname -m) not supported, skipping"
+            return 0
+        else
+            error "fd: $(uname -m) not supported"
+            error "Use --skip-unsupported to continue"
+            return 1
+        fi
+    fi
+    install_from_github fd sharkdp/fd "${suffix}.tar.gz" fd
 }
 
 # ─── bat ─────────────────────────────────────────────────────
 install_bat() {
     header "bat"
-    install_from_github bat sharkdp/bat "x86_64-unknown-linux-musl.tar.gz" bat
+    local suffix
+    if ! suffix=$(get_arch_suffix); then
+        if [[ $SKIP_UNSUPPORTED -eq 1 ]]; then
+            warn "bat: $(uname -m) not supported, skipping"
+            return 0
+        else
+            error "bat: $(uname -m) not supported"
+            error "Use --skip-unsupported to continue"
+            return 1
+        fi
+    fi
+    install_from_github bat sharkdp/bat "${suffix}.tar.gz" bat
 }
 
 # ─── eza ─────────────────────────────────────────────────────
 install_eza() {
     header "eza"
-    install_from_github eza eza-community/eza "x86_64-unknown-linux-musl.tar.gz" eza
+    local arch
+    arch=$(uname -m)
+    local suffix
+    case "$arch" in
+        x86_64)  suffix="x86_64-unknown-linux-musl" ;;
+        aarch64) suffix="aarch64-unknown-linux-musl" ;;
+        *)
+            if [[ $SKIP_UNSUPPORTED -eq 1 ]]; then
+                warn "eza: $arch not supported, skipping"
+                return 0
+            else
+                error "eza: $arch not supported"
+                error "Use --skip-unsupported to continue"
+                return 1
+            fi
+            ;;
+    esac
+    install_from_github eza eza-community/eza "${suffix}.tar.gz" eza
 }
 
 # ─── glow (markdown renderer) ────────────────────────────────
@@ -372,10 +557,16 @@ main() {
     echo "║          NeoTUI  -  Installer             ║"
     echo "╚══════════════════════════════════════════╝"
     echo -e "${NC}"
+    
+    info "Architecture: $(get_arch_name)"
+    [[ $SKIP_UNSUPPORTED -eq 1 ]] && info "Mode: --skip-unsupported enabled"
+    echo ""
 
     local failures=0
-    install_zsh      || ((failures++)) || true
+    install_tmux      || ((failures++)) || true
+    install_zsh       || ((failures++)) || true
     install_zsh_plugins || ((failures++)) || true
+    install_go        || ((failures++)) || true
     install_neovim   || ((failures++)) || true
     install_lf       || ((failures++)) || true
     install_fzf      || ((failures++)) || true
