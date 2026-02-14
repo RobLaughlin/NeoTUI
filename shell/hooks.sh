@@ -24,4 +24,8 @@ add-zsh-hook chpwd __neotui_write_pwd
 if [[ -n "${TMUX:-}" ]]; then
     mkdir -p "$__neotui_state_dir"
     printf '%s' "$PWD" > "$__neotui_state_dir/shell-pwd"
+    
+    # Discard any pending terminal responses (e.g., Device Attributes)
+    # that may have leaked through during tmux attach
+    while read -t 0.01 -k 1 2>/dev/null; do :; done
 fi

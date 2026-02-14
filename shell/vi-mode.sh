@@ -9,6 +9,7 @@
 # as keystrokes, causing "failing fwd-i-search" errors.
 # Fix: read and discard any pending input before zsh processes it.
 if [[ -n "${TMUX:-}" ]]; then
+    sleep 0.05 2>/dev/null || sleep 1  # Wait for async DA response
     while read -t 0 -k 1 2>/dev/null; do :; done
 fi
 
@@ -32,7 +33,7 @@ function zle-keymap-select {
 zle -N zle-keymap-select
 
 function zle-line-init {
-    # Drain any stale terminal responses before accepting input
+    sleep 0.01 2>/dev/null
     while read -t 0 -k 1 2>/dev/null; do :; done
     echo -ne '\e[6 q'  # Start each prompt in insert mode with beam cursor
 }
@@ -76,6 +77,7 @@ autoload -Uz add-zsh-hook
 # Catches DA responses that arrive while config files were loading.
 # Runs once, then removes itself.
 _neotui_flush_once() {
+    sleep 0.05 2>/dev/null || sleep 1
     while read -t 0 -k 1 2>/dev/null; do :; done
     add-zsh-hook -d precmd _neotui_flush_once
 }
