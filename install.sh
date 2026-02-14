@@ -487,6 +487,22 @@ install_opencode() {
     fi
 }
 
+# ─── claude code ────────────────────────────────────────────────
+install_claude_code() {
+    header "Claude Code"
+    if has claude; then
+        success "Already installed: $(claude --version 2>/dev/null || echo 'claude')"
+        return
+    fi
+
+    if has curl; then
+        info "Installing Claude Code via curl..."
+        curl -fsSL https://claude.ai/install.sh | bash && success "Claude Code installed" || warn "Could not install Claude Code, install manually"
+    else
+        warn "Cannot install Claude Code (need curl)"
+    fi
+}
+
 # ─── Symlink Configurations ─────────────────────────────────
 symlink_configs() {
     header "Symlinking configurations"
@@ -578,6 +594,7 @@ main() {
     install_gogrip   || ((failures++)) || true
     install_carapace || ((failures++)) || true
     install_opencode || ((failures++)) || true
+    install_claude_code || ((failures++)) || true
     symlink_configs
 
     if [[ $failures -gt 0 ]]; then

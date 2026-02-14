@@ -54,6 +54,7 @@ show_help() {
     echo -e "    ${GREEN}prefix, E${NC}        Toggle file explorer sidebar"
     echo -e "    ${GREEN}prefix, v${NC}        Open Neovim in current dir"
     echo -e "    ${GREEN}prefix, O${NC}        Open opencode (split below)"
+    echo -e "    ${GREEN}prefix, C${NC}        Open Claude Code (split below)"
     echo -e "    ${GREEN}prefix, r${NC}        Reload tmux config"
     echo ""
     echo -e "  ${BOLD}Copy Mode${NC}  ${DIM}(prefix, [  to enter)${NC}"
