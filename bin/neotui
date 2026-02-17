@@ -252,6 +252,4 @@ if [ -f "$HOME/.tmux.conf" ]; then
 fi
 
 # ─── Attach ──────────────────────────────────────────────────
-# Consume any pending terminal responses before attaching
-{ timeout 0.1 cat > /dev/null; } < /dev/tty 2>/dev/null || true
 exec tmux attach-session -t "$SESSION_NAME"

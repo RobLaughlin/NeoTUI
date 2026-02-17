@@ -2,15 +2,6 @@
 # NeoTUI - Environment Setup (zsh)
 # ============================================================
 
-# ─── Flush stale terminal input (early) ─────────────────────
-# tmux sends DA (Device Attributes) queries on startup; the
-# terminal's response can land in zsh's input buffer and be
-# misinterpreted as keystrokes ("failing fwd-i-search").
-# Drain any pending bytes as early as possible.
-if [[ -n "${TMUX:-}" ]]; then
-    while read -t 0 -k 1 2>/dev/null; do :; done
-fi
-
 # ─── Editors ─────────────────────────────────────────────────
 export EDITOR="nvim"
 export VISUAL="nvim"

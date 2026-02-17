@@ -2,17 +2,6 @@
 # NeoTUI - Zsh Vi-Mode & Prompt
 # ============================================================
 
-# ─── Flush stale terminal input ─────────────────────────────
-# When tmux starts, the terminal sends Device Attributes responses
-# (e.g. ESC[?61;4;...c) that arrive in zsh's input buffer.
-# With vi-mode, ESC enters normal mode and the rest is interpreted
-# as keystrokes, causing "failing fwd-i-search" errors.
-# Fix: read and discard any pending input before zsh processes it.
-if [[ -n "${TMUX:-}" ]]; then
-    sleep 0.05 2>/dev/null || sleep 1  # Wait for async DA response
-    while read -t 0 -k 1 2>/dev/null; do :; done
-fi
-
 # Disable XON/XOFF flow control (Ctrl+S / Ctrl+Q) so stray
 # characters can't accidentally trigger forward-search.
 stty -ixon 2>/dev/null
@@ -33,8 +22,6 @@ function zle-keymap-select {
 zle -N zle-keymap-select
 
 function zle-line-init {
-    sleep 0.01 2>/dev/null
-    while read -t 0 -k 1 2>/dev/null; do :; done
     echo -ne '\e[6 q'  # Start each prompt in insert mode with beam cursor
 }
 zle -N zle-line-init
@@ -72,16 +59,6 @@ done
 
 # ─── Hook support ────────────────────────────────────────────
 autoload -Uz add-zsh-hook
-
-# ─── One-shot input flush before first prompt ───────────────
-# Catches DA responses that arrive while config files were loading.
-# Runs once, then removes itself.
-_neotui_flush_once() {
-    sleep 0.05 2>/dev/null || sleep 1
-    while read -t 0 -k 1 2>/dev/null; do :; done
-    add-zsh-hook -d precmd _neotui_flush_once
-}
-add-zsh-hook precmd _neotui_flush_once
 
 # ─── Prompt (Neon Blue Theme) ───────────────────────────────
 # Colors:
