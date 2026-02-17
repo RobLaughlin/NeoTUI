@@ -87,9 +87,7 @@ return {
           map("n", "K", vim.lsp.buf.hover, vim.tbl_extend("force", o, { desc = "Hover info" }))
           map("n", "<leader>rn", vim.lsp.buf.rename, vim.tbl_extend("force", o, { desc = "Rename symbol" }))
           map("n", "<leader>ca", vim.lsp.buf.code_action, vim.tbl_extend("force", o, { desc = "Code action" }))
-          map("n", "<leader>f", function()
-            vim.lsp.buf.format({ async = true })
-          end, vim.tbl_extend("force", o, { desc = "Format file" }))
+          -- NOTE: <leader>f (Format file) is handled by conform.nvim in plugins/formatting.lua
           map("n", "<leader>sh", vim.lsp.buf.signature_help, vim.tbl_extend("force", o, { desc = "Signature help" }))
         end,
       })

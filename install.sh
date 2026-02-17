@@ -463,6 +463,26 @@ install_carapace() {
     install_from_github carapace carapace-sh/carapace-bin "linux_amd64.tar.gz" carapace
 }
 
+# ─── prettier (code formatter) ───────────────────────────────
+install_prettier() {
+    header "prettier"
+    if has prettier; then
+        success "Already installed: prettier $(prettier --version 2>/dev/null)"
+        return
+    fi
+
+    if has npm; then
+        info "Installing prettier via npm..."
+        npm install -g prettier@latest 2>/dev/null && success "prettier installed" || {
+            warn "Failed to install prettier via npm"
+            return 1
+        }
+    else
+        warn "Cannot install prettier (npm not found). Install Node.js/npm first."
+        return 1
+    fi
+}
+
 # ─── opencode ────────────────────────────────────────────────
 install_opencode() {
     header "opencode"
@@ -593,6 +613,7 @@ main() {
     install_glow     || ((failures++)) || true
     install_gogrip   || ((failures++)) || true
     install_carapace || ((failures++)) || true
+    install_prettier || ((failures++)) || true
     install_opencode || ((failures++)) || true
     install_claude_code || ((failures++)) || true
     symlink_configs
@@ -620,7 +641,11 @@ main() {
     echo -e "  ${BOLD}4.${NC} First launch of Neovim will auto-install plugins & LSP servers."
     echo "     Run 'nvim' and wait for installation to complete."
     echo ""
-    echo -e "  ${BOLD}5.${NC} Set up AI autocompletion (Codeium / Windsurf — free):"
+    echo -e "  ${BOLD}5.${NC} Prettier is installed. Format-on-save is ${YELLOW}disabled${NC} by default."
+    echo -e "     Press ${GREEN}Space+f${NC} to format the current file."
+    echo -e "     Press ${GREEN}Space+Shift+f${NC} to toggle format-on-save."
+    echo ""
+    echo -e "  ${BOLD}6.${NC} Set up AI autocompletion (Codeium / Windsurf — free):"
     echo "     a. Create a free account at ${BLUE}https://windsurf.com${NC}"
     echo "     b. Open Neovim:  nvim"
     echo "     c. Run:          :Codeium Auth"

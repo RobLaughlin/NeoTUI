@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to OpenCode when working with code in this repository.
 
 ## Project Overview
 
@@ -49,7 +49,7 @@ Uses lazy.nvim as plugin manager. `init.lua` sets leader to Space, loads `lua/co
 - `lua/core/options.lua` — global vim options
 - `lua/core/keymaps.lua` — editor keybindings (all use `desc` for which-key)
 - `lua/core/autocmds.lua` — autocommands including filetype-specific indentation
-- `lua/plugins/*.lua` — one file per plugin concern (ui, lsp, cmp, codeium, telescope, treesitter)
+- `lua/plugins/*.lua` — one file per plugin concern (ui, lsp, cmp, codeium, telescope, treesitter, formatting)
 
 Each plugin file returns a lazy.nvim spec table. Use lazy loading (`event`, `cmd`, `keys`) whenever possible.
 
