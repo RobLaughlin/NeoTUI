@@ -22,40 +22,11 @@ set shell bash
 set shellopts '-eu'
 set ifs "\n"
 
-# Previewer
-set previewer ~/.config/lf/preview.sh
+# Previewer (installed to ~/.local/bin/ by the installer)
+set previewer neotui-lf-preview
 
-# Prompt: simplified (no user@host), [WD] added dynamically by on-cd
+# Prompt: simplified (no user@host)
 set promptfmt " \033[34;1m%d\033[0m\033[1m%f\033[0m"
-
-# ─── Working Directory Indicator ─────────────────────────────
-# Shows [WD] when in the shell's working directory, or [WD]/rel/path
-# when inside a subdirectory of it. Updates on every directory change.
-cmd on-cd &{{
-    state_dir="$HOME/.local/share/neotui"
-    pwd_file="$state_dir/shell-pwd"
-    shell_pwd=""
-    if [ -f "$pwd_file" ]; then
-        shell_pwd="$(cat "$pwd_file")"
-    fi
-
-    # Update prompt [WD] indicator
-    fmt=" \033[34;1m%d\033[0m\033[1m%f\033[0m"
-
-    if [ -n "$shell_pwd" ]; then
-        case "$PWD" in
-            "$shell_pwd")
-                fmt=" \033[32;1m[WD]\033[0m \033[34;1m%d\033[0m\033[1m%f\033[0m"
-                ;;
-            "$shell_pwd"/*)
-                rel=${PWD#$shell_pwd}
-                fmt=" \033[32;1m[WD]${rel}\033[0m \033[1m%f\033[0m"
-                ;;
-        esac
-    fi
-
-    lf -remote "send $id set promptfmt \"$fmt\""
-}}
 
 # ─── Sync Shell (S) ──────────────────────────────────────────
 # cd the first idle shell pane to lf's current directory.
@@ -92,9 +63,6 @@ cmd sync-shell &{{
     tmux send-keys -t "$pane_id" "cd '${escaped}'" Enter
     lf -remote "send $id echo 'Shell → $PWD'"
 }}
-
-# Trigger on-cd at startup to set the initial prompt
-on-cd
 
 # ─── Preview Toggle ──────────────────────────────────────────
 # Preview is off by default. Press zp to toggle it on/off.

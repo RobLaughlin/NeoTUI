@@ -8,6 +8,12 @@ STATE_DIR="$HOME/.local/share/neotui"
 WIDTH_FILE="$STATE_DIR/sidebar-width"
 DEFAULT_WIDTH=30
 
+# Read NEOTUI_DIR from tmux session environment
+NEOTUI_DIR=$(tmux show-environment NEOTUI_DIR 2>/dev/null | cut -d= -f2-) || true
+if [[ -z "$NEOTUI_DIR" ]]; then
+    NEOTUI_DIR="${NEOTUI_DIR:-$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)}"
+fi
+
 # Read saved sidebar width
 width=$DEFAULT_WIDTH
 if [ -f "$WIDTH_FILE" ]; then
@@ -25,6 +31,7 @@ tmux new-window -c "$CUR_DIR"
 
 # Add lf sidebar on the left
 if command -v lf &>/dev/null; then
-    tmux split-window -hb -l "$width" -c "$CUR_DIR" 'lf'
+    tmux split-window -hb -l "$width" -c "$CUR_DIR" \
+        "lf -config '$NEOTUI_DIR/lf/lfrc'"
     tmux select-pane -R
 fi

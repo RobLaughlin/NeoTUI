@@ -17,6 +17,12 @@ DEFAULT_WIDTH=30
 
 mkdir -p "$STATE_DIR"
 
+# Read NEOTUI_DIR from tmux session environment
+NEOTUI_DIR=$(tmux show-environment NEOTUI_DIR 2>/dev/null | cut -d= -f2-) || true
+if [[ -z "$NEOTUI_DIR" ]]; then
+    NEOTUI_DIR="${NEOTUI_DIR:-$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)}"
+fi
+
 # Read saved width, fall back to default
 load_width() {
     if [[ -f "$WIDTH_FILE" ]]; then
@@ -53,7 +59,8 @@ else
     # Sidebar is hidden: open it at the saved width
     SIDEBAR_WIDTH=$(load_width)
     CUR_DIR=$(tmux display-message -p '#{pane_current_path}')
-    tmux split-window -hb -l "$SIDEBAR_WIDTH" -c "$CUR_DIR" 'lf'
+    tmux split-window -hb -l "$SIDEBAR_WIDTH" -c "$CUR_DIR" \
+        "lf -config '$NEOTUI_DIR/lf/lfrc'"
     # Return focus to the right (main) pane
     tmux select-pane -R
 fi

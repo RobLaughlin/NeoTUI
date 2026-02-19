@@ -1,6 +1,23 @@
 -- ============================================================
 -- LSP Configuration (mason + lspconfig)
 -- ============================================================
+
+-- Read user's LSP selection (written by the installer).
+-- Falls back to a sensible default if the file doesn't exist.
+local default_servers = {
+  "gopls",           -- Go
+  "pyright",         -- Python
+  "ts_ls",           -- TypeScript/JavaScript
+  "bashls",          -- Bash/Shell
+  "clangd",          -- C/C++
+  "lua_ls",          -- Lua (for Neovim config)
+  "intelephense",    -- PHP
+}
+
+local config_path = vim.fn.stdpath("config") .. "/neotui_lsp_servers.lua"
+local ok, user_servers = pcall(dofile, config_path)
+local servers_to_install = ok and user_servers or default_servers
+
 return {
   -- Mason: manages LSP server installations
   {
@@ -28,14 +45,7 @@ return {
     dependencies = { "williamboman/mason.nvim" },
     config = function()
       require("mason-lspconfig").setup({
-        ensure_installed = {
-          "gopls",           -- Go
-          "pyright",         -- Python
-          "ts_ls",           -- TypeScript/JavaScript
-          "bashls",          -- Bash/Shell
-          "clangd",          -- C/C++
-          "lua_ls",          -- Lua (for Neovim config)
-        },
+        ensure_installed = servers_to_install,
         automatic_installation = true,
       })
     end,
@@ -93,7 +103,8 @@ return {
       })
 
       -- Server configurations
-      local servers = {
+      -- Only set up servers that are in the install list
+      local server_configs = {
         gopls = {
           settings = {
             gopls = {
@@ -134,9 +145,10 @@ return {
             },
           },
         },
+        intelephense = {},
       }
 
-      for server, config in pairs(servers) do
+      for server, config in pairs(server_configs) do
         config.capabilities = capabilities
         lspconfig[server].setup(config)
       end

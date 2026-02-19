@@ -18,11 +18,8 @@ NeoTUI gives you a complete coding environment in one command: Neovim with LSP a
 git clone https://github.com/YOUR_USERNAME/neotui.git
 cd neotui
 
-# Install everything (no root required for most tools)
+# Install everything
 ./install.sh
-
-# Start a zsh shell to pick up the new config
-zsh
 
 # Launch NeoTUI
 neotui
@@ -30,14 +27,22 @@ neotui
 
 On first launch, Neovim will auto-install plugins and language servers — give it a minute.
 
+## How It Works
+
+NeoTUI is **self-contained by default**. The `neotui` command starts a tmux session with its own configs — it does not modify your existing shell, tmux, Neovim, or lf configuration.
+
+- **Inside `neotui`**: Full NeoTUI experience (vi-mode, aliases, theme, sidebar, etc.) via isolation mechanisms (`NVIM_APPNAME`, `ZDOTDIR`, `lf -config`, `tmux source-file`)
+- **Outside `neotui`**: Your existing configs are untouched
+
+The installer optionally offers to integrate NeoTUI features into your global configs (`~/.tmux.conf`, `~/.zshrc`, `~/.config/nvim/`, `~/.config/lf/`). It asks about each change individually and checks for keybind conflicts before making any modifications.
+
 ## Installer Options
 
 ```bash
-./install.sh                    # Standard installation
+./install.sh                    # Interactive installation
 ./install.sh --skip-unsupported # Skip tools unavailable for your architecture
+./install.sh --yes              # Accept all defaults (scripted/CI use)
 ```
-
-The `--skip-unsupported` flag is useful on less common architectures (e.g., older ARM systems) where some pre-built binaries aren't available. Without this flag, the installer will error if a tool lacks support for your CPU architecture.
 
 ### Supported Architectures
 
@@ -52,12 +57,10 @@ The `--skip-unsupported` flag is useful on less common architectures (e.g., olde
 NeoTUI comes with **Codeium** (by Windsurf) for free AI code suggestions — multi-line ghost text that appears as you type, similar to Cursor or Copilot.
 
 1. Create a free account at [windsurf.com](https://windsurf.com)
-2. Open Neovim: `nvim`
+2. Open Neovim inside a neotui session
 3. Run: `:Codeium Auth`
 4. Sign in via browser, copy the token, paste it back into Neovim
 5. Done — AI suggestions appear as faded blue ghost text as you type
-
-**Tab** accepts the full suggestion. **Alt+w** accepts just the next word. **Alt+l** accepts just the next line.
 
 ## What Gets Installed
 
@@ -67,7 +70,7 @@ NeoTUI comes with **Codeium** (by Windsurf) for free AI code suggestions — mul
 | **Codeium** | Free AI autocompletion (ghost text, like Cursor) |
 | **opencode** | AI coding assistant (chat-based, in a split pane) |
 | **lf** | Terminal file manager (interactive sidebar) |
-| **zsh** | Shell with vi-mode, autosuggestions, syntax highlighting |
+| **zsh** | Shell (with vi-mode inside NeoTUI sessions) |
 | **fzf** | Fuzzy finder (history, files, directories) |
 | **ripgrep** | Fast code search |
 | **fd** | Fast file finder |
@@ -76,7 +79,7 @@ NeoTUI comes with **Codeium** (by Windsurf) for free AI code suggestions — mul
 | **glow** | Render Markdown beautifully in the terminal |
 | **carapace** | Shell completion engine (1400+ commands) |
 
-All tools install to `~/.local/bin` (no root required).
+All tools install to `~/.local/bin` (no root required for most tools).
 
 ## What It Looks Like
 
@@ -88,77 +91,91 @@ All tools install to `~/.local/bin` (no root required).
 │  lf sidebar  │  Main pane                                    │
 │  (files)     │  (Neovim / shell / opencode)                  │
 │              │                                               │
-│  Syncs with  │  Neovim: LSP + AI ghost text completion       │
-│  your shell  │  Zsh: vi-mode + autosuggestions               │
-│  directory   │                                               │
+│              │  Neovim: LSP + AI ghost text completion        │
+│              │  Zsh: vi-mode + autosuggestions                │
+│              │                                               │
 │              │                                               │
 ├──────────────┴───────────────────────────────────────────────┤
 │  Statusline (lualine)          branch  diagnostics  filetype │
 └──────────────────────────────────────────────────────────────┘
 ```
 
-## Key Bindings
+## NeoTUI Key Bindings
 
-Run `neotui -h` for the full reference. Here are the essentials:
+Run `neotui -h` for the full reference. These are the NeoTUI-specific defaults:
 
 ### tmux (prefix: Ctrl+b)
 
 | Key | Action |
 |-----|--------|
-| `prefix, c` | New window (with file explorer) |
 | `prefix, E` | Toggle file explorer sidebar |
 | `prefix, T` | Toggle tab bar |
-| `prefix, O` | Open AI assistant (opencode) |
-| `prefix, v` | Open Neovim |
-| `prefix, h/j/k/l` | Navigate panes |
-| `prefix, n/p` | Next / previous window |
-
-### Neovim (leader: Space)
-
-| Key | Action |
-|-----|--------|
-| `Space ff` | Find files |
-| `Space fg` | Live grep (search text) |
-| `gd` | Go to definition |
-| `gr` | Find references |
-| `K` | Hover docs |
-| `Space rn` | Rename symbol |
-| `Space ca` | Code action |
-| `Space w` | Save |
-| `Tab` | Accept AI suggestion |
-| `Ctrl+Space` | Open LSP completion menu |
+| `prefix, v` | Open Neovim in current directory |
+| `prefix, O` | Open opencode (split below) |
+| `prefix, C` | Open Claude Code (split below) |
+| `prefix, c` | New window with lf sidebar |
 
 ### lf (file explorer)
 
 | Key | Action |
 |-----|--------|
-| `Enter` | Open file in Neovim |
-| `Shift+Enter` | Open in new tab |
-| `dd` | Trash file |
-| `md / mf` | Create directory / file |
+| `S` | Sync shell pane to lf's directory |
+| `Enter / o` | Open file in Neovim (via tmux) |
+| `Shift+Enter / O` | Open file in new tmux tab |
 | `zp` | Toggle preview pane |
+| `dd` | Trash file |
+| `dD` | Delete permanently |
+| `md / mf` | Create directory / file |
+| `yy / pp` | Copy / paste file |
+| `yp` | Copy file path to clipboard |
+| `gh` | Go to ~ |
+| `gp` | Go to ~/projects |
+| `gd` | Go to ~/Documents |
+| `g/` | Go to / |
+
+### Neovim (leader: Space)
+
+| Key | Action |
+|-----|--------|
+| `Space f` | Format file (prettier) |
+| `Space F` | Toggle format-on-save (off by default) |
+| `Tab` | Accept AI ghost text suggestion |
+| `Alt+w` | Accept next word of AI suggestion |
+| `Alt+l` | Accept next line of AI suggestion |
+| `Alt+] / [` | Cycle AI suggestions |
+| `Ctrl+e` | Dismiss AI suggestion |
+
+### Shell
+
+| Command | Action |
+|---------|--------|
+| `sync` | Sync lf sidebar to shell's current directory |
+
+Other keybinds (vi-mode, pane navigation, aliases, etc.) depend on your global config. The installer can optionally add these to your configs.
 
 ## LSP Support
 
-Language servers auto-install on first Neovim launch via mason.nvim:
+Language servers are selected during installation and auto-install on first Neovim launch via mason.nvim:
 
 | Language | Server |
 |----------|--------|
 | Go | gopls |
 | Python | pyright |
 | TypeScript/JS | ts_ls |
-| Bash/Shell | bash-language-server |
+| Bash/Shell | bashls |
 | C/C++ | clangd |
 | Lua | lua_ls |
+| PHP | intelephense |
 
 ## File Structure
 
 ```
 neotui/
-├── install.sh                 # One-command installer
+├── install.sh                 # Interactive installer
 ├── README.md
+├── AGENTS.md
 ├── tmux/
-│   └── tmux.conf              # Tab bar, panes, keybinds
+│   └── tmux.conf              # Tab bar, panes, keybinds (used inside neotui sessions)
 ├── nvim/
 │   ├── init.lua               # Neovim entry point
 │   └── lua/
@@ -168,9 +185,10 @@ neotui/
 │   ├── lfrc                   # File explorer config
 │   └── preview.sh             # File previewer
 ├── shell/
+│   ├── .zshrc                 # ZDOTDIR wrapper (sources user's .zshrc then NeoTUI)
 │   ├── env.sh                 # PATH, zsh options, fzf, carapace
 │   ├── vi-mode.sh             # Vi-mode, prompt theme
-│   ├── hooks.sh               # Bidirectional lf <-> shell sync
+│   ├── hooks.sh               # Escape sequence flushing
 │   └── aliases.sh             # Shell aliases
 └── bin/
     ├── neotui                 # Main launcher
@@ -180,14 +198,18 @@ neotui/
 
 ## Configuration
 
-All config lives in this repo. The installer creates symlinks:
+NeoTUI uses isolation mechanisms so it doesn't touch your configs:
 
-- `tmux/tmux.conf` -> `~/.tmux.conf`
-- `nvim/` -> `~/.config/nvim/`
-- `lf/` -> `~/.config/lf/`
-- Shell scripts sourced from `~/.zshrc`
+| Tool | Isolation | NeoTUI config location |
+|------|-----------|----------------------|
+| tmux | `tmux source-file` in launcher | `tmux/tmux.conf` (in repo) |
+| Neovim | `NVIM_APPNAME=neotui` | `~/.config/neotui/` (symlink to `nvim/`) |
+| lf | `lf -config` flag | `lf/lfrc` (in repo) |
+| zsh | `ZDOTDIR` | `shell/.zshrc` (in repo) |
 
-Edit files in the repo and changes take effect immediately (tmux: `prefix, r` to reload; Neovim: restart).
+Edit files in the repo and changes take effect inside NeoTUI sessions (tmux: `prefix, r` to reload; Neovim: restart).
+
+To integrate NeoTUI features into your global configs, re-run `./install.sh` and go through the Phase 4 prompts.
 
 ## WSL2 Notes
 
@@ -199,12 +221,12 @@ Edit files in the repo and changes take effect immediately (tmux: `prefix, r` to
 
 | Problem | Fix |
 |---------|-----|
-| Neovim plugins not installing | Run `:Lazy sync` in Neovim |
+| Neovim plugins not installing | Run `:Lazy sync` inside a neotui session |
 | LSP servers not found | Run `:Mason` to check, `:MasonInstall <server>` to install |
 | Icons look broken | Install a Nerd Font and set it in your terminal |
 | AI completions not working | Run `:Codeium Auth` to sign in, `:Codeium Toggle` to enable |
 | Tab bar disappeared | Press `Ctrl+b, T` to toggle it back |
-| `neotui` command not found | Run `source ~/.zshrc` or start a new shell |
+| `neotui` command not found | Ensure `~/.local/bin` is in your PATH |
 
 ## License
 

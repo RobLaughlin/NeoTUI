@@ -1,10 +1,26 @@
 # AGENTS.md
 
-This file provides guidance to OpenCode when working with code in this repository.
+This file provides guidance to AI agents when working with code in this repository.
 
 ## Project Overview
 
-NeoTUI is a terminal IDE configuration that bundles Neovim (with LSP + Codeium AI completion), tmux, lf file manager, and zsh into a single `neotui` command. The installer (`install.sh`) downloads pre-built binaries to `~/.local/bin` and symlinks config files to their standard locations.
+NeoTUI is a terminal IDE configuration that bundles Neovim (with LSP + Codeium AI completion), tmux, lf file manager, and zsh into a single `neotui` command. The `neotui` command is **self-contained** — it uses isolation mechanisms (`NVIM_APPNAME`, `ZDOTDIR`, `lf -config`, direct `tmux source-file`) so it works without modifying any user configs. The installer optionally offers to integrate NeoTUI features into the user's global configs.
+
+## Config Philosophy
+
+**NeoTUI must never silently modify user configs.** The following rules are strict:
+
+1. **Self-contained by default.** The `neotui` command works fully without any changes to the user's `~/.tmux.conf`, `~/.config/nvim/`, `~/.config/lf/`, or `~/.zshrc`. It uses its own copies via isolation mechanisms.
+
+2. **Ask and inform before every external config change.** The installer MUST ask the user before modifying any config file outside of NeoTUI-specific locations (`~/.config/neotui/`, `~/.local/bin/neotui*`, `~/.local/share/zsh/plugins/`). Each prompt must clearly describe what the change does.
+
+3. **Marker blocks for all injected config.** Any content the installer adds to user config files (`~/.tmux.conf`, `~/.zshrc`, `~/.config/lf/lfrc`) must be wrapped in `# >>> neotui >>>` / `# <<< neotui <<<` marker blocks.
+
+4. **Conflict detection.** Before offering keybinds, check for conflicts with the user's existing config. Notify the user of conflicts and preserve their existing bindings.
+
+5. **Backup before overwrite.** If replacing an existing config (e.g., symlinking `~/.config/nvim/`), back it up first with a timestamped suffix.
+
+6. **Documentation only covers NeoTUI-specific defaults.** `README.md` and `neotui --help` ONLY document keybinds and commands that NeoTUI provides by default (custom tmux binds, lf commands, formatting keybinds, the `sync` shell command). Generic vim/tmux/zsh features that are opt-in via the installer (vi-mode, aliases, pane navigation, etc.) are NOT documented in these places.
 
 ## Commands
 
@@ -12,6 +28,7 @@ NeoTUI is a terminal IDE configuration that bundles Neovim (with LSP + Codeium A
 # Install/update everything
 ./install.sh
 ./install.sh --skip-unsupported   # skip tools without binaries for current arch
+./install.sh --yes                # accept all defaults (scripted/CI use)
 
 # Validate configs
 shellcheck install.sh bin/neotui bin/neotui-* shell/*.sh
@@ -21,8 +38,8 @@ nvim --headless -c 'lua dofile("nvim/init.lua")' -c 'q'   # Lua syntax check
 # After plugin changes
 nvim -c 'Lazy sync'
 
-# Reload tmux config (or prefix, r inside tmux)
-tmux source-file ~/.tmux.conf
+# Reload tmux config inside a neotui session
+tmux source-file "$NEOTUI_DIR/tmux/tmux.conf"
 
 # Launch the environment
 neotui
@@ -32,15 +49,31 @@ There is no formal test suite. Validation is done via shellcheck and headless Ne
 
 ## Architecture
 
-### Config symlink targets
+### NeoTUI-specific locations (no user consent needed)
 
-| Repo path | Installed to |
-|-----------|-------------|
-| `nvim/` | `~/.config/nvim/` |
-| `tmux/tmux.conf` | `~/.tmux.conf` |
-| `lf/` | `~/.config/lf/` |
-| `shell/*.sh` | sourced from `~/.zshrc` |
-| `bin/*` | `~/.local/bin/` |
+| Repo path | Installed to | Purpose |
+|-----------|-------------|---------|
+| `nvim/` | `~/.config/neotui/` (symlink) | Neovim config for `NVIM_APPNAME=neotui` |
+| `bin/*` | `~/.local/bin/` | Launcher and helper scripts |
+| `lf/preview.sh` | `~/.local/bin/neotui-lf-preview` | lf file previewer |
+
+### User configs (require consent via installer Phase 4)
+
+| Config | File | What the installer can add |
+|--------|------|---------------------------|
+| tmux | `~/.tmux.conf` | Keybinds, status bar, vi-mode, default shell |
+| Neovim | `~/.config/nvim/` | Full NeoTUI config (only if no existing config) |
+| lf | `~/.config/lf/lfrc` | Commands, navigation shortcuts |
+| zsh | `~/.zshrc` | vi-mode, prompt, completion, plugins, PATH, EDITOR |
+
+### Isolation mechanisms
+
+| Tool | Mechanism | Effect |
+|------|-----------|--------|
+| tmux | `tmux source-file $NEOTUI_DIR/tmux/tmux.conf` | NeoTUI session uses its own tmux config |
+| Neovim | `NVIM_APPNAME=neotui` | Neovim reads from `~/.config/neotui/` |
+| lf | `lf -config $NEOTUI_DIR/lf/lfrc` | lf uses NeoTUI's lfrc |
+| zsh | `ZDOTDIR=$NEOTUI_DIR/shell` | zsh reads `shell/.zshrc` wrapper |
 
 ### Neovim (`nvim/`)
 
@@ -49,25 +82,34 @@ Uses lazy.nvim as plugin manager. `init.lua` sets leader to Space, loads `lua/co
 - `lua/core/options.lua` — global vim options
 - `lua/core/keymaps.lua` — editor keybindings (all use `desc` for which-key)
 - `lua/core/autocmds.lua` — autocommands including filetype-specific indentation
-- `lua/plugins/*.lua` — one file per plugin concern (ui, lsp, cmp, codeium, telescope, treesitter, formatting)
+- `lua/plugins/*.lua` — one file per plugin concern (ui, lsp, cmp, codeium, telescope, treesitter, formatting, linting)
 
 Each plugin file returns a lazy.nvim spec table. Use lazy loading (`event`, `cmd`, `keys`) whenever possible.
 
+LSP server selection is read from `neotui_lsp_servers.lua` in the Neovim config directory (written by the installer). If absent, a default set is used.
+
 ### Shell (`shell/`)
 
-Four files sourced by zsh in order:
-- `env.sh` — PATH, zsh options, fzf/carapace setup, DA response flushing
+Files sourced by zsh inside NeoTUI sessions (via `ZDOTDIR`):
+- `.zshrc` — ZDOTDIR wrapper: sources user's `~/.zshrc` first, then NeoTUI shell scripts
+- `env.sh` — PATH, zsh options, fzf/carapace setup
 - `vi-mode.sh` — vi-mode keybindings, cursor shapes, prompt theme
-- `hooks.sh` — chpwd hook that writes PWD to `~/.local/share/neotui/shell-pwd` for lf sync
+- `hooks.sh` — escape sequence flushing on tmux attach
 - `aliases.sh` — aliases and utility functions
 
 ### lf-shell sync
 
-lf and zsh share state via `~/.local/share/neotui/shell-pwd`. The shell writes its PWD there on every directory change (hooks.sh). lf reads it on its `on-cd` event to show a `[WD]` indicator. The `sync-shell` lf command finds an idle shell pane and cd's it to match lf's directory.
+The `sync-shell` lf command (bound to `S`) finds an idle shell pane via tmux and cd's it to match lf's directory. The `sync` shell command does the reverse — tells lf to navigate to the shell's directory.
 
 ### Installer (`install.sh`)
 
-Uses a generic `install_from_github()` helper to download releases. Supports x86_64, ARM64, and ARMv7. Targets glibc 2.17+ and prefers musl-static builds when available.
+Four phases:
+1. **Install tools** — downloads binaries to `~/.local/bin`
+2. **NeoTUI core setup** — symlinks NeoTUI-specific files (no user config changes)
+3. **LSP server selection** — asks which language servers to install
+4. **Global config integration** — optional, prompted per-item, with conflict detection
+
+Uses a generic `install_from_github()` helper to download releases. Supports x86_64, ARM64, and ARMv7.
 
 ## Code Style
 
@@ -94,7 +136,7 @@ Uses a generic `install_from_github()` helper to download releases. Supports x86
 
 ## Key Conventions
 
-- **Theme:** Catppuccin Mocha everywhere (Neovim, tmux, fzf)
+- **Theme:** Catppuccin Mocha inside NeoTUI sessions (Neovim, tmux, fzf)
 - **Leader keys:** Neovim = Space, tmux prefix = Ctrl+b
 - **Indentation:** 4 spaces default; 2 spaces for JS/TS/JSON/YAML/HTML/CSS/Lua; tabs for Go
 - **Line length:** soft limit at 100 characters (`colorcolumn`)
@@ -105,15 +147,19 @@ Uses a generic `install_from_github()` helper to download releases. Supports x86
 
 **Add a Neovim plugin:** Create `nvim/lua/plugins/<name>.lua`, return a lazy.nvim spec table with lazy loading, run `:Lazy sync`
 
-**Add a shell alias:** Edit `shell/aliases.sh`, follow existing patterns
+**Add a shell alias:** Edit `shell/aliases.sh` (applies inside NeoTUI sessions only)
 
-**Modify tmux keybinds:** Edit `tmux/tmux.conf`, reload with `prefix, r`
+**Modify tmux keybinds:** Edit `tmux/tmux.conf` (applies inside NeoTUI sessions only), reload with `prefix, r`
 
 **Change Neovim options:** `nvim/lua/core/options.lua` for global, `nvim/lua/core/autocmds.lua` for filetype-specific
 
+**Add a new installer prompt:** Add to Phase 4 in `install.sh`, use `ask_yes_no`, check for conflicts, wrap additions in marker blocks
+
 ## Documentation Sync
 
-When changing user-facing features, keep these three in sync:
-1. `README.md` — feature lists, keybindings, setup instructions
+When changing user-facing features, keep these in sync:
+1. `README.md` — NeoTUI-specific features, keybindings, setup instructions
 2. `bin/neotui` (`show_help` function) — runtime `--help` output
 3. The actual config files
+
+**Critical rule:** Only document NeoTUI-specific defaults (custom tmux binds, lf commands, format keybinds, `sync` command). Do NOT document generic vim/tmux/zsh features in README or `--help`.
