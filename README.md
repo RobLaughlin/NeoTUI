@@ -129,9 +129,6 @@ Run `neotui -h` for the full reference. These are the NeoTUI-specific defaults:
 | `yy / pp` | Copy / paste file |
 | `yp` | Copy file path to clipboard |
 | `gh` | Go to ~ |
-| `gp` | Go to ~/projects |
-| `gd` | Go to ~/Documents |
-| `g/` | Go to / |
 
 ### Neovim (leader: Space)
 

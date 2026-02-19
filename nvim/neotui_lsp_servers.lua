@@ -5,6 +5,6 @@ return {
   "pyright",
   "ts_ls",
   "bashls",
-  "clangd",
   "lua_ls",
+  "clangd",
 }

@@ -232,10 +232,6 @@ map R bulk-rename
 # Navigation
 map . set hidden!
 map gh cd ~
-map gp cd ~/projects
-map gd cd ~/Documents
-map gD cd ~/Downloads
-map g/ cd /
 
 # Preview toggle
 map zp toggle-preview
