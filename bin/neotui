@@ -159,6 +159,10 @@ tmux set-environment -t "$SESSION_NAME" NEOTUI_DIR "$NEOTUI_DIR"
 tmux set-environment -t "$SESSION_NAME" NVIM_APPNAME "neotui"
 tmux set-environment -t "$SESSION_NAME" ZDOTDIR "$NEOTUI_DIR/shell"
 
+# Respawn the initial pane so it picks up the new environment
+# (the shell started before ZDOTDIR was set)
+tmux respawn-pane -t "$SESSION_NAME:1.1" -k
+
 # Rename the first window
 tmux rename-window -t "$SESSION_NAME:1" 'main'
 

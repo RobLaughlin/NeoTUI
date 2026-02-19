@@ -485,37 +485,28 @@ install_eza() {
     install_from_github eza eza-community/eza "${suffix}.tar.gz" eza
 }
 
-install_glow() {
-    header "glow (markdown renderer)"
-    if has glow; then
-        success "Already installed"
-        return
+install_markdown_tools() {
+    header "markdown tools (glow, go-grip)"
+    
+    if has glow && has go-grip; then
+        success "Already installed: glow, go-grip"
+        return 0
     fi
 
-    if has go; then
-        info "Installing glow via go install..."
-        GOBIN="$LOCAL_BIN" go install github.com/charmbracelet/glow@latest
-        success "glow installed"
-    else
-        error "Go not found - cannot install glow"
-        return 1
-    fi
-}
-
-install_gogrip() {
-    header "go-grip (GitHub markdown preview)"
-    if has go-grip; then
-        success "Already installed"
-        return
-    fi
-
-    if has go; then
-        info "Installing go-grip via go install..."
-        GOBIN="$LOCAL_BIN" go install github.com/chrishrb/go-grip@latest
-        success "go-grip installed"
-    else
-        error "Go not found - cannot install go-grip"
-        return 1
+    if ask_yes_no "Install markdown preview tools (glow, go-grip)?" "Y"; then
+        if has go; then
+            if ! has glow; then
+                info "Installing glow..."
+                GOBIN="$LOCAL_BIN" go install github.com/charmbracelet/glow@latest && success "glow installed" || warn "Failed to install glow"
+            fi
+            if ! has go-grip; then
+                info "Installing go-grip..."
+                GOBIN="$LOCAL_BIN" go install github.com/chrishrb/go-grip@latest && success "go-grip installed" || warn "Failed to install go-grip"
+            fi
+        else
+            warn "Go not found - cannot install markdown tools"
+            return 1
+        fi
     fi
 }
 
@@ -547,20 +538,20 @@ install_opencode() {
     header "opencode"
     if has opencode; then
         success "Already installed: $(opencode --version 2>/dev/null || echo 'opencode')"
-        return
+        return 0
     fi
 
-    if has npm; then
-        info "Installing opencode via npm (opencode-ai@latest)..."
-        npm install -g opencode-ai@latest 2>/dev/null && success "opencode installed" || {
-            warn "npm install failed, trying curl installer..."
-            curl -fsSL https://opencode.ai/install | bash && success "opencode installed" || warn "Could not install opencode, install manually"
-        }
-    elif has curl; then
-        info "Installing opencode via curl..."
-        curl -fsSL https://opencode.ai/install | bash && success "opencode installed" || warn "Could not install opencode, install manually"
-    else
-        warn "Cannot install opencode (need npm or curl)"
+    if ask_yes_no "Install opencode (AI coding assistant)?" "Y"; then
+        if has npm; then
+            info "Installing opencode via npm..."
+            npm install -g opencode-ai@latest 2>/dev/null && success "opencode installed" || warn "Failed to install opencode via npm"
+        elif has curl; then
+            info "Installing opencode via curl..."
+            curl -fsSL https://opencode.ai/install | bash && success "opencode installed" || warn "Failed to install opencode"
+        else
+            warn "Cannot install opencode (need npm or curl)"
+            return 1
+        fi
     fi
 }
 
@@ -568,14 +559,17 @@ install_claude_code() {
     header "Claude Code"
     if has claude; then
         success "Already installed: $(claude --version 2>/dev/null || echo 'claude')"
-        return
+        return 0
     fi
 
-    if has curl; then
-        info "Installing Claude Code via curl..."
-        curl -fsSL https://claude.ai/install.sh | bash && success "Claude Code installed" || warn "Could not install Claude Code, install manually"
-    else
-        warn "Cannot install Claude Code (need curl)"
+    if ask_yes_no "Install Claude Code (AI coding assistant)?" "Y"; then
+        if has curl; then
+            info "Installing Claude Code..."
+            curl -fsSL https://claude.ai/install.sh | bash && success "Claude Code installed" || warn "Failed to install Claude Code"
+        else
+            warn "Cannot install Claude Code (need curl)"
+            return 1
+        fi
     fi
 }
 
@@ -1088,6 +1082,22 @@ configure_zsh() {
         info "vi-mode already enabled"
     fi
 
+    # Persistent history (required for autosuggestions across sessions)
+    echo ""
+    local neotui_config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/neotui"
+    local history_conf="$neotui_config_dir/history.conf"
+    if [[ -f "$history_conf" ]]; then
+        info "Persistent history already configured"
+    else
+        if ask_yes_no "Enable persistent command history? (required for autosuggestions to remember commands across sessions)" "Y"; then
+            mkdir -p "$neotui_config_dir"
+            echo "# NeoTUI: persistent history configuration" > "$history_conf"
+            echo "# This file is sourced by NeoTUI's shell wrapper" >> "$history_conf"
+            echo "NEOTUI_HISTFILE=\"\$HOME/.zsh_history\"" >> "$history_conf"
+            success "Persistent history enabled"
+        fi
+    fi
+
     # NeoTUI prompt
     echo ""
     if ask_yes_no "Use the NeoTUI prompt? ([HH:MM] ~/path (branch) >)" "Y"; then
@@ -1219,14 +1229,13 @@ main() {
     install_ripgrep   || ((failures++)) || true
     install_fd        || ((failures++)) || true
     install_bat       || ((failures++)) || true
-    install_eza       || ((failures++)) || true
-    install_glow      || ((failures++)) || true
-    install_gogrip    || ((failures++)) || true
-    install_carapace  || ((failures++)) || true
-    install_prettier  || ((failures++)) || true
-    install_opencode  || ((failures++)) || true
-    install_claude_code || ((failures++)) || true
-    install_zsh_plugins || ((failures++)) || true
+    install_eza           || ((failures++)) || true
+    install_markdown_tools || ((failures++)) || true
+    install_carapace      || ((failures++)) || true
+    install_prettier      || ((failures++)) || true
+    install_opencode      || ((failures++)) || true
+    install_claude_code   || ((failures++)) || true
+    install_zsh_plugins   || ((failures++)) || true
 
     # ─── Phase 2: Core setup ─────────────────────────────────
     setup_neotui_core

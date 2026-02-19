@@ -28,7 +28,6 @@ setopt INTERACTIVE_COMMENTS # Allow comments in interactive shell
 setopt NO_BEEP              # Silence
 
 # ─── History ────────────────────────────────────────────────
-HISTFILE="$HOME/.zsh_history"
 HISTSIZE=50000
 SAVEHIST=50000
 setopt SHARE_HISTORY        # Share history across sessions

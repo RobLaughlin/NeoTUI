@@ -5,6 +5,17 @@
 # integration on top of the user's existing config.
 # ============================================================
 
+# Load persistent history config if user opted in during install.
+# This sets NEOTUI_HISTFILE, which we use to initialize HISTFILE
+# before sourcing user config (so autosuggestions can see history
+# from previous sessions).
+_neotui_config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/neotui"
+if [[ -f "$_neotui_config_dir/history.conf" ]]; then
+    source "$_neotui_config_dir/history.conf"
+    [[ -n "${NEOTUI_HISTFILE:-}" ]] && : "${HISTFILE:=$NEOTUI_HISTFILE}"
+fi
+unset _neotui_config_dir
+
 # Source the user's own .zshrc first so we layer on top, not replace.
 # Temporarily reset ZDOTDIR so the user's .zshrc doesn't recurse back here.
 if [[ -f "$HOME/.zshrc" ]]; then
