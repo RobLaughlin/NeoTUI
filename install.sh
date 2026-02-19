@@ -931,13 +931,6 @@ configure_neovim() {
 
 # ─── lf config ───────────────────────────────────────────────
 
-# Extract mapped keys from an lf config file
-get_lf_maps() {
-    local file="$1"
-    [[ -f "$file" ]] || return
-    grep -E '^\s*map\s' "$file" 2>/dev/null | awk '{print $2}' | sort -u || true
-}
-
 configure_lf() {
     echo ""
     echo -e "  ${BOLD}─── lf (~/.config/lf/) ───${NC}"
@@ -961,8 +954,6 @@ configure_lf() {
     fi
 
     # Existing lf config — offer individual features
-    local existing_maps
-    existing_maps=$(get_lf_maps "$lf_config")
     local lf_additions=""
 
     # sync-shell command
@@ -1048,66 +1039,6 @@ LFEOF
         fi
     fi
 
-    # Navigation shortcuts
-    local nav_shortcuts=("gh" "gp" "gd" "gD" "g/")
-    local nav_targets=("~" "~/projects" "~/Documents" "~/Downloads" "/")
-    local nav_conflicts=()
-    local nav_available=()
-
-    for i in "${!nav_shortcuts[@]}"; do
-        local shortcut="${nav_shortcuts[$i]}"
-        if echo "$existing_maps" | grep -qxF "$shortcut"; then
-            nav_conflicts+=("$shortcut")
-        else
-            nav_available+=("$shortcut")
-        fi
-    done
-
-    if [[ ${#nav_conflicts[@]} -gt 0 ]]; then
-        echo ""
-        warn "Navigation shortcut conflicts detected:"
-        for i in "${!nav_shortcuts[@]}"; do
-            local shortcut="${nav_shortcuts[$i]}"
-            local target="${nav_targets[$i]}"
-            for conflict in "${nav_conflicts[@]}"; do
-                if [[ "$shortcut" == "$conflict" ]]; then
-                    printf "    ${YELLOW}%-4s${NC} -> %s (already mapped)\n" "$shortcut" "$target"
-                fi
-            done
-        done
-        info "Your existing mappings will be preserved."
-    fi
-
-    if [[ ${#nav_available[@]} -gt 0 ]]; then
-        echo ""
-        echo "  Navigation shortcuts available:"
-        for i in "${!nav_shortcuts[@]}"; do
-            local shortcut="${nav_shortcuts[$i]}"
-            local target="${nav_targets[$i]}"
-            # Only show available ones
-            for avail in "${nav_available[@]}"; do
-                if [[ "$shortcut" == "$avail" ]]; then
-                    printf "    ${GREEN}%-4s${NC} -> %s\n" "$shortcut" "$target"
-                fi
-            done
-        done
-        echo ""
-
-        if ask_yes_no "Add these navigation shortcuts?" "Y"; then
-            lf_additions+=$'\n'"# NeoTUI: navigation shortcuts"
-            for i in "${!nav_shortcuts[@]}"; do
-                local shortcut="${nav_shortcuts[$i]}"
-                local target="${nav_targets[$i]}"
-                for avail in "${nav_available[@]}"; do
-                    if [[ "$shortcut" == "$avail" ]]; then
-                        lf_additions+=$'\n'"map $shortcut cd $target"
-                    fi
-                done
-            done
-        fi
-    fi
-
-    # Write all additions if any
     if [[ -n "$lf_additions" ]]; then
         append_neotui_block "$lf_config" "$lf_additions"
         success "lf features added to ~/.config/lf/lfrc"
