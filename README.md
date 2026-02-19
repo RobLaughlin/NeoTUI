@@ -1,12 +1,9 @@
 # NeoTUI
 
-A modern, out-of-the-box terminal IDE for developers who want to code in the terminal with AI — without spending days configuring everything.
-
-NeoTUI gives you a complete coding environment in one command: Neovim with LSP and AI autocompletion, a file explorer sidebar, tabbed windows, smart shell integration, and an AI coding assistant — all pre-configured and ready to go.
+A modern, out-of-the-box terminal. Includes Neovim with LSP and AI autocompletion, a file explorer sidebar, tabbed windows, smart shell integration, and Claude/OpenCode.
 
 ## Who is this for?
 
-- Developers who want a **terminal-based IDE** that works immediately
 - Anyone curious about **AI-assisted coding** in the terminal (Codeium + opencode)
 - Vim/Neovim users who want a **batteries-included** setup without hours of config
 - Developers on **remote servers or WSL2** where GUI editors aren't ideal
@@ -28,11 +25,6 @@ neotui
 On first launch, Neovim will auto-install plugins and language servers — give it a minute.
 
 ## How It Works
-
-NeoTUI is **self-contained by default**. The `neotui` command starts a tmux session with its own configs — it does not modify your existing shell, tmux, Neovim, or lf configuration.
-
-- **Inside `neotui`**: Full NeoTUI experience (vi-mode, aliases, theme, sidebar, etc.) via isolation mechanisms (`NVIM_APPNAME`, `ZDOTDIR`, `lf -config`, `tmux source-file`)
-- **Outside `neotui`**: Your existing configs are untouched
 
 The installer optionally offers to integrate NeoTUI features into your global configs (`~/.tmux.conf`, `~/.zshrc`, `~/.config/nvim/`, `~/.config/lf/`). It asks about each change individually and checks for keybind conflicts before making any modifications.
 
@@ -76,7 +68,6 @@ NeoTUI comes with **Codeium** (by Windsurf) for free AI code suggestions — mul
 | **fd** | Fast file finder |
 | **bat** | Syntax-highlighted file viewer |
 | **eza** | Modern `ls` replacement with icons |
-| **glow** | Render Markdown beautifully in the terminal |
 | **carapace** | Shell completion engine (1400+ commands) |
 
 All tools install to `~/.local/bin` (no root required for most tools).
@@ -91,8 +82,8 @@ All tools install to `~/.local/bin` (no root required for most tools).
 │  lf sidebar  │  Main pane                                    │
 │  (files)     │  (Neovim / shell / opencode)                  │
 │              │                                               │
-│              │  Neovim: LSP + AI ghost text completion        │
-│              │  Zsh: vi-mode + autosuggestions                │
+│              │  Neovim: LSP + AI ghost text completion       │
+│              │  Zsh: vi-mode + autosuggestions               │
 │              │                                               │
 │              │                                               │
 ├──────────────┴───────────────────────────────────────────────┤
@@ -192,21 +183,6 @@ neotui/
     ├── neotui-toggle-sidebar  # Sidebar toggle
     └── neotui-new-window      # New window with sidebar
 ```
-
-## Configuration
-
-NeoTUI uses isolation mechanisms so it doesn't touch your configs:
-
-| Tool | Isolation | NeoTUI config location |
-|------|-----------|----------------------|
-| tmux | `tmux source-file` in launcher | `tmux/tmux.conf` (in repo) |
-| Neovim | `NVIM_APPNAME=neotui` | `~/.config/neotui/` (symlink to `nvim/`) |
-| lf | `lf -config` flag | `lf/lfrc` (in repo) |
-| zsh | `ZDOTDIR` | `shell/.zshrc` (in repo) |
-
-Edit files in the repo and changes take effect inside NeoTUI sessions (tmux: `prefix, r` to reload; Neovim: restart).
-
-To integrate NeoTUI features into your global configs, re-run `./install.sh` and go through the Phase 4 prompts.
 
 ## WSL2 Notes
 
