@@ -752,7 +752,7 @@ EOF
     if [[ ${#conflicts[@]} -gt 0 ]]; then
         warn "Keybind conflicts detected (these will be preserved):"
         for key in "${conflicts[@]}"; do
-            echo -e "    ${YELLOW}prefix+${key}${NC} is already bound in your config"
+            printf "    ${YELLOW}prefix+%-4s${NC} %s (already bound)\n" "$key" "${neotui_binds[$key]}"
         done
     fi
 
@@ -782,7 +782,11 @@ EOF
 
     # Vi-style pane navigation
     echo ""
-    if ask_yes_no "Enable vi-style pane navigation (h/j/k/l)?" "Y"; then
+    echo -e "  Vi-style pane navigation:"
+    echo -e "    ${GREEN}prefix+h/j/k/l${NC}  Select pane left/down/up/right"
+    echo -e "    ${GREEN}prefix+H/J/K/L${NC}  Resize pane (repeatable)"
+    echo ""
+    if ask_yes_no "Enable vi-style pane navigation?" "Y"; then
         local has_vim_nav=0
         if echo "$existing_binds" | grep -qxF "h" && \
            echo "$existing_binds" | grep -qxF "j"; then
@@ -852,6 +856,49 @@ EOF
 
 # ─── Neovim config ───────────────────────────────────────────
 
+show_neotui_nvim_features() {
+    echo ""
+    echo -e "  ${BOLD}NeoTUI Neovim features (leader = Space):${NC}"
+    echo ""
+    echo -e "  ${BOLD}Formatting${NC}"
+    echo -e "    ${GREEN}Space+f${NC}     Format file (prettier/LSP)"
+    echo -e "    ${GREEN}Space+F${NC}     Toggle format-on-save ${DIM}(off by default)${NC}"
+    echo ""
+    echo -e "  ${BOLD}AI Completion (Codeium)${NC}  ${DIM}insert mode${NC}"
+    echo -e "    ${GREEN}Tab${NC}         Accept suggestion"
+    echo -e "    ${GREEN}Alt+w${NC}       Accept next word"
+    echo -e "    ${GREEN}Alt+l${NC}       Accept next line"
+    echo -e "    ${GREEN}Alt+]${NC}/${GREEN}[${NC}      Cycle suggestions"
+    echo -e "    ${GREEN}Ctrl+e${NC}      Dismiss suggestion"
+    echo ""
+    echo -e "  ${BOLD}Telescope${NC} (fuzzy finder)"
+    echo -e "    ${GREEN}Space+ff${NC}    Find files"
+    echo -e "    ${GREEN}Space+fg${NC}    Live grep"
+    echo -e "    ${GREEN}Space+fb${NC}    Find buffers"
+    echo -e "    ${GREEN}Space+fr${NC}    Recent files"
+    echo -e "    ${GREEN}Space+fs${NC}    Document symbols"
+    echo -e "    ${GREEN}Space+fd${NC}    Diagnostics"
+    echo -e "    ${GREEN}Space+gc${NC}    Git commits"
+    echo -e "    ${GREEN}Space+gs${NC}    Git status"
+    echo ""
+    echo -e "  ${BOLD}LSP${NC} (when language server attached)"
+    echo -e "    ${GREEN}gd${NC}          Go to definition"
+    echo -e "    ${GREEN}gD${NC}          Go to declaration"
+    echo -e "    ${GREEN}gi${NC}          Go to implementation"
+    echo -e "    ${GREEN}gr${NC}          Find references"
+    echo -e "    ${GREEN}K${NC}           Hover info"
+    echo -e "    ${GREEN}Space+rn${NC}    Rename symbol"
+    echo -e "    ${GREEN}Space+ca${NC}    Code action"
+    echo -e "    ${GREEN}Space+sh${NC}    Signature help"
+    echo ""
+    echo -e "  ${BOLD}Commands${NC}"
+    echo -e "    ${GREEN}:Codeium Auth${NC}   Authenticate AI completion"
+    echo -e "    ${GREEN}:Codeium Chat${NC}  Open AI chat in browser"
+    echo -e "    ${GREEN}:Mason${NC}         Manage LSP servers"
+    echo -e "    ${GREEN}:Lazy${NC}          Manage plugins"
+    echo ""
+}
+
 configure_neovim() {
     echo ""
     echo -e "  ${BOLD}─── Neovim (~/.config/nvim/) ───${NC}"
@@ -871,12 +918,14 @@ configure_neovim() {
             fi
             ln -sf "$NEOTUI_DIR/nvim" "$nvim_config"
             success "~/.config/nvim/ -> NeoTUI config"
+            show_neotui_nvim_features
         fi
     else
         # Existing Neovim config
         info "Existing Neovim config found at ~/.config/nvim/"
         info "NeoTUI's Neovim config is available inside neotui sessions"
         info "automatically (via NVIM_APPNAME). No changes needed."
+        show_neotui_nvim_features
     fi
 }
 
@@ -919,7 +968,8 @@ configure_lf() {
     # sync-shell command
     if ! grep -q "cmd sync-shell" "$lf_config" 2>/dev/null; then
         echo ""
-        if ask_yes_no "Add sync-shell command (S key)? Syncs an idle shell pane to lf's directory." "Y"; then
+        echo -e "  ${GREEN}S${NC}  Sync an idle shell pane to lf's current directory"
+        if ask_yes_no "Add sync-shell command?" "Y"; then
             lf_additions+=$(cat << 'LFEOF'
 
 # NeoTUI: sync shell pane to lf's current directory
@@ -958,7 +1008,8 @@ LFEOF
     # open command
     if ! grep -q "cmd open" "$lf_config" 2>/dev/null; then
         echo ""
-        if ask_yes_no "Add open command (Enter key)? Opens text files in Neovim via tmux pane." "Y"; then
+        echo -e "  ${GREEN}Enter / o${NC}  Open text files in Neovim (in adjacent tmux pane)"
+        if ask_yes_no "Add open command?" "Y"; then
             lf_additions+=$'\n'"map <enter> open"$'\n'"map o open"
         fi
     fi
@@ -966,7 +1017,8 @@ LFEOF
     # open-tab command
     if ! grep -q "cmd open-tab" "$lf_config" 2>/dev/null; then
         echo ""
-        if ask_yes_no "Add open-tab command (Shift+Enter / O key)? Opens text files in a new tmux window." "Y"; then
+        echo -e "  ${GREEN}Shift+Enter / O${NC}  Open text files in Neovim (new tmux window)"
+        if ask_yes_no "Add open-tab command?" "Y"; then
             lf_additions+=$'\n'"map <s-enter> open-tab"$'\n'"map O open-tab"
         fi
     fi
@@ -974,7 +1026,8 @@ LFEOF
     # toggle-preview command
     if ! grep -q "cmd toggle-preview" "$lf_config" 2>/dev/null; then
         echo ""
-        if ask_yes_no "Add toggle-preview command (zp key)? Toggles a file preview pane on/off." "Y"; then
+        echo -e "  ${GREEN}zp${NC}  Toggle file preview pane on/off"
+        if ask_yes_no "Add toggle-preview command?" "Y"; then
             lf_additions+=$(cat << 'LFEOF'
 
 # NeoTUI: toggle preview pane
@@ -1013,8 +1066,14 @@ LFEOF
     if [[ ${#nav_conflicts[@]} -gt 0 ]]; then
         echo ""
         warn "Navigation shortcut conflicts detected:"
-        for shortcut in "${nav_conflicts[@]}"; do
-            echo -e "    ${YELLOW}${shortcut}${NC} is already mapped in your config"
+        for i in "${!nav_shortcuts[@]}"; do
+            local shortcut="${nav_shortcuts[$i]}"
+            local target="${nav_targets[$i]}"
+            for conflict in "${nav_conflicts[@]}"; do
+                if [[ "$shortcut" == "$conflict" ]]; then
+                    printf "    ${YELLOW}%-4s${NC} -> %s (already mapped)\n" "$shortcut" "$target"
+                fi
+            done
         done
         info "Your existing mappings will be preserved."
     fi
@@ -1166,9 +1225,10 @@ configure_zsh() {
 
     # sync command
     echo ""
+    echo -e "  ${GREEN}sync${NC}  Sync lf sidebar to shell's current directory"
     if ! grep -q 'sync()' "$zshrc" 2>/dev/null && \
        ! grep -q 'function sync' "$zshrc" 2>/dev/null; then
-        if ask_yes_no "Add 'sync' command? (syncs lf sidebar to shell directory)" "Y"; then
+        if ask_yes_no "Add 'sync' command?" "Y"; then
             zsh_additions+=$'\n'"# NeoTUI: sync lf sidebar to shell directory"
             zsh_additions+=$'\n'"sync() {"
             zsh_additions+=$'\n'"    if [[ -n \"\${TMUX:-}\" ]] && command -v lf &>/dev/null; then"
