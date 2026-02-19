@@ -93,7 +93,7 @@ show_help() {
     echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     echo -e "  ${DIM}Other keybinds (vi-mode, pane navigation, aliases, etc.) depend${NC}"
-    echo -e "  ${DIM}on your global config. Run ./install.sh to optionally integrate${NC}"
+    echo -e "  ${DIM}on your global config. Re-run the installer to optionally integrate${NC}"
     echo -e "  ${DIM}NeoTUI features into your global tmux, zsh, lf, and Neovim configs.${NC}"
     echo ""
 }
@@ -139,7 +139,7 @@ fi
 
 if ! command -v lf &>/dev/null; then
     echo "Warning: lf is not installed (sidebar will not work)" >&2
-    echo "Run install.sh to install dependencies" >&2
+    echo "Install with: curl -fsSL https://raw.githubusercontent.com/RobLaughlin/NeoTUI/main/install.sh | bash" >&2
 fi
 
 # ─── Attach to existing session if it exists ─────────────────

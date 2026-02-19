@@ -11,18 +11,32 @@ A modern, out-of-the-box terminal. Includes Neovim with LSP and AI autocompletio
 ## Quick Start
 
 ```bash
-# Clone the project
-git clone https://github.com/YOUR_USERNAME/neotui.git
-cd neotui
-
-# Install everything
-./install.sh
+# One-line install
+curl -fsSL https://raw.githubusercontent.com/RobLaughlin/NeoTUI/main/install.sh | bash
 
 # Launch NeoTUI
 neotui
 ```
 
 On first launch, Neovim will auto-install plugins and language servers — give it a minute.
+
+### Manual Install
+
+If you prefer to clone manually:
+
+```bash
+git clone https://github.com/RobLaughlin/NeoTUI.git
+cd NeoTUI
+./install-local.sh
+```
+
+### Updating
+
+```bash
+cd ~/.local/share/neotui/repo && git pull && ./install-local.sh
+```
+
+Or re-run the one-liner to pull updates automatically.
 
 ## How It Works
 
@@ -31,9 +45,15 @@ The installer optionally offers to integrate NeoTUI features into your global co
 ## Installer Options
 
 ```bash
-./install.sh                    # Interactive installation
-./install.sh --skip-unsupported # Skip tools unavailable for your architecture
-./install.sh --yes              # Accept all defaults (scripted/CI use)
+# Remote (curl)
+curl -fsSL https://raw.githubusercontent.com/RobLaughlin/NeoTUI/main/install.sh | bash
+curl -fsSL ... | bash -s -- --skip-unsupported  # Skip unavailable tools
+curl -fsSL ... | bash -s -- --yes               # Accept all defaults (CI)
+
+# Local (after cloning)
+./install-local.sh                    # Interactive installation
+./install-local.sh --skip-unsupported # Skip tools unavailable for your architecture
+./install-local.sh --yes              # Accept all defaults (scripted/CI use)
 ```
 
 ### Supported Architectures
@@ -159,7 +179,8 @@ Language servers are selected during installation and auto-install on first Neov
 
 ```
 neotui/
-├── install.sh                 # Interactive installer
+├── install.sh                 # Bootstrap installer (curl | bash)
+├── install-local.sh           # Main installer (run by install.sh)
 ├── README.md
 ├── AGENTS.md
 ├── tmux/

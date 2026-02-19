@@ -25,13 +25,16 @@ NeoTUI is a terminal IDE configuration that bundles Neovim (with LSP + Codeium A
 ## Commands
 
 ```bash
-# Install/update everything
-./install.sh
-./install.sh --skip-unsupported   # skip tools without binaries for current arch
-./install.sh --yes                # accept all defaults (scripted/CI use)
+# Install/update everything (remote)
+curl -fsSL https://raw.githubusercontent.com/RobLaughlin/NeoTUI/main/install.sh | bash
+
+# Install/update everything (local, after cloning)
+./install-local.sh
+./install-local.sh --skip-unsupported   # skip tools without binaries for current arch
+./install-local.sh --yes                # accept all defaults (scripted/CI use)
 
 # Validate configs
-shellcheck install.sh bin/neotui bin/neotui-* shell/*.sh
+shellcheck install.sh install-local.sh bin/neotui bin/neotui-* shell/*.sh
 nvim --headless -c 'q'                                    # verify Neovim loads
 nvim --headless -c 'lua dofile("nvim/init.lua")' -c 'q'   # Lua syntax check
 
@@ -101,9 +104,10 @@ Files sourced by zsh inside NeoTUI sessions (via `ZDOTDIR`):
 
 The `sync-shell` lf command (bound to `S`) finds an idle shell pane via tmux and cd's it to match lf's directory. The `sync` shell command does the reverse — tells lf to navigate to the shell's directory.
 
-### Installer (`install.sh`)
+### Installer
 
-Four phases:
+- `install.sh` — Bootstrap script (curl | bash). Clones repo to `~/.local/share/neotui/repo` and runs `install-local.sh`
+- `install-local.sh` — Main installer with four phases:
 1. **Install tools** — downloads binaries to `~/.local/bin`
 2. **NeoTUI core setup** — symlinks NeoTUI-specific files (no user config changes)
 3. **LSP server selection** — asks which language servers to install
@@ -153,7 +157,7 @@ Uses a generic `install_from_github()` helper to download releases. Supports x86
 
 **Change Neovim options:** `nvim/lua/core/options.lua` for global, `nvim/lua/core/autocmds.lua` for filetype-specific
 
-**Add a new installer prompt:** Add to Phase 4 in `install.sh`, use `ask_yes_no`, check for conflicts, wrap additions in marker blocks
+**Add a new installer prompt:** Add to Phase 4 in `install-local.sh`, use `ask_yes_no`, check for conflicts, wrap additions in marker blocks
 
 ## Documentation Sync
 
