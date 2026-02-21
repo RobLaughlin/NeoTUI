@@ -42,6 +42,14 @@ Installer behavior:
 - prompts before installing/upgrading missing or outdated tools
 - prefers distro package manager installs
 - falls back to upstream binaries for `nvim` and `lf` when distro packages are unavailable or below minimum
+- prints applied NeoTUI defaults during install so users know what is being enabled
+
+Default setup applied at install time:
+- enables tmux top status bar with tab navigation
+- sets zsh as the default shell inside NeoTUI tmux panes
+- enables tmux pane navigation hotkeys (`<prefix> h/j/k/l`)
+- enables tmux pane split hotkeys (`<prefix>+|` and `<prefix>+-`)
+- enables tmux pane resize hotkeys (`<prefix>+H/J/K/L`)
 
 ## Usage
 
@@ -68,6 +76,9 @@ Tmux defaults:
 - top status bar with tab-style window list
 - use `Shift+Left` / `Shift+Right` (or `Alt+Left` / `Alt+Right`) to switch tabs
 - zsh is the default shell inside NeoTUI tmux panes
+- pane navigation with `<prefix> h/j/k/l`
+- pane splitting with `<prefix>+|` and `<prefix>+-`
+- pane resizing with `<prefix>+H/J/K/L`
 
 Zsh defaults:
 - NeoTUI uses repo-scoped zsh config in `shell/`

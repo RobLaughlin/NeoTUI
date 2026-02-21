@@ -20,6 +20,7 @@ Refactor principles:
 - only install a global `neotui` command; do not modify global dotfiles
 - when asked to update configs in `~/projects/NeoTUI`, update NeoTUI-managed configs in this repo, not global configs like `~/.zshrc`
 - enforce runtime minimums from `REQUIREMENTS.txt`
+- when installer defaults change, update both `README.md` and `install-local.sh` install messaging so users are informed during installation
 
 Quality gates:
 - all shell scripts must pass syntax checks

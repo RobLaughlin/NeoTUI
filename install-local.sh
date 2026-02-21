@@ -366,6 +366,13 @@ cleanup_legacy_link "$HOME/.zshrc" "$ROOT_DIR/shell/.zshrc"
 cleanup_legacy_link "$HOME/.config/nvim/init.lua" "$ROOT_DIR/nvim/init.lua"
 cleanup_legacy_link "$HOME/.config/nvim" "$ROOT_DIR/nvim"
 
+printf 'Applying NeoTUI defaults...\n'
+printf '  1) Enabling tmux status bar (top tab navigation)\n'
+printf '  2) Setting zsh as the default shell inside NeoTUI tmux\n'
+printf '  3) Enabling tmux pane navigation hotkeys (<prefix> h/j/k/l)\n'
+printf '  4) Enabling tmux pane split hotkeys (<prefix>+| and <prefix>+-)\n'
+printf '  5) Enabling tmux pane resize hotkeys (<prefix>+H/J/K/L)\n'
+
 mkdir -p "$BIN_DIR"
 
 if [ -e "$TARGET" ] || [ -L "$TARGET" ]; then
