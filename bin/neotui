@@ -1,182 +1,61 @@
 #!/usr/bin/env bash
-# ============================================================
-# NeoTUI - Launcher
-# Starts a tmux session with sidebar layout and full environment
-# Self-contained: uses its own configs via isolation mechanisms
-# ============================================================
 set -euo pipefail
 
-# ─── Colors ──────────────────────────────────────────────────
-BOLD='\033[1m'
-DIM='\033[2m'
-CYAN='\033[36m'
-BLUE='\033[34m'
-GREEN='\033[32m'
-YELLOW='\033[33m'
-NC='\033[0m'
+SCRIPT_PATH="${BASH_SOURCE[0]}"
 
-# ─── Resolve NEOTUI_DIR ─────────────────────────────────────
-NEOTUI_DIR="${NEOTUI_DIR:-$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)}"
+while [ -L "$SCRIPT_PATH" ]; do
+  LINK_TARGET="$(readlink "$SCRIPT_PATH")"
+  if [[ "$LINK_TARGET" == /* ]]; then
+    SCRIPT_PATH="$LINK_TARGET"
+  else
+    SCRIPT_PATH="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)/$LINK_TARGET"
+  fi
+done
 
-# ─── Help ────────────────────────────────────────────────────
-show_help() {
-    echo -e "${BOLD}NeoTUI${NC} — a modern terminal IDE, out of the box"
-    echo ""
-    echo -e "${BOLD}USAGE${NC}"
-    echo "    neotui [options] [directory]"
-    echo ""
-    echo -e "${BOLD}OPTIONS${NC}"
-    echo "    -h, --help      Show this help message"
-    echo ""
-    echo -e "${BOLD}ARGUMENTS${NC}"
-    echo "    directory        Start in this directory (default: current dir)"
-    echo ""
-    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    echo -e "${BOLD}${CYAN}TMUX${NC}  ${DIM}prefix = Ctrl+b  (NeoTUI-specific binds)${NC}"
-    echo ""
-    echo -e "  ${GREEN}prefix, E${NC}        Toggle file explorer sidebar"
-    echo -e "  ${GREEN}prefix, T${NC}        Toggle tab bar"
-    echo -e "  ${GREEN}prefix, v${NC}        Open Neovim in current directory"
-    echo -e "  ${GREEN}prefix, O${NC}        Open opencode (split below)"
-    echo -e "  ${GREEN}prefix, C${NC}        Open Claude Code (split below)"
-    echo -e "  ${GREEN}prefix, c${NC}        New window with lf sidebar"
-    echo ""
-    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    echo -e "${BOLD}${CYAN}LF${NC}  ${DIM}(file explorer sidebar)${NC}"
-    echo ""
-    echo -e "  ${BOLD}Navigation Shortcuts${NC}"
-    echo -e "    ${GREEN}gh${NC}               Go to ~"
-    echo -e "    ${GREEN}gp${NC}               Go to ~/projects"
-    echo -e "    ${GREEN}gd${NC}               Go to ~/Documents"
-    echo -e "    ${GREEN}gD${NC}               Go to ~/Downloads"
-    echo -e "    ${GREEN}g/${NC}               Go to /"
-    echo ""
-    echo -e "  ${BOLD}Commands${NC}"
-    echo -e "    ${GREEN}S${NC}                Sync shell pane to lf's directory"
-    echo -e "    ${GREEN}Enter / o${NC}        Open file in Neovim (via tmux)"
-    echo -e "    ${GREEN}Shift+Enter / O${NC}  Open file in new tmux tab"
-    echo -e "    ${GREEN}zp${NC}               Toggle preview pane"
-    echo ""
-    echo -e "  ${BOLD}File Operations${NC}"
-    echo -e "    ${GREEN}dd${NC}               Trash file"
-    echo -e "    ${GREEN}dD${NC}               Delete permanently"
-    echo -e "    ${GREEN}yy${NC}               Copy file"
-    echo -e "    ${GREEN}pp${NC}               Paste file"
-    echo -e "    ${GREEN}md / mf${NC}          Create directory / file"
-    echo -e "    ${GREEN}r${NC}                Rename"
-    echo -e "    ${GREEN}R${NC}                Bulk rename"
-    echo -e "    ${GREEN}yp${NC}               Copy path to clipboard"
-    echo ""
-    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    echo -e "${BOLD}${CYAN}NEOVIM${NC}  ${DIM}leader = Space  (NeoTUI-specific)${NC}"
-    echo ""
-    echo -e "  ${BOLD}Formatting${NC}"
-    echo -e "    ${GREEN}Space f${NC}          Format file (prettier)"
-    echo -e "    ${GREEN}Space F${NC}          Toggle format-on-save${DIM} (off by default)${NC}"
-    echo ""
-    echo -e "  ${BOLD}AI Completion (Codeium)${NC}"
-    echo -e "    ${GREEN}Tab${NC}              Accept ghost text suggestion"
-    echo -e "    ${GREEN}Alt+w${NC}            Accept next word"
-    echo -e "    ${GREEN}Alt+l${NC}            Accept next line"
-    echo -e "    ${GREEN}Alt+] / [${NC}        Cycle suggestions"
-    echo -e "    ${GREEN}Ctrl+e${NC}           Dismiss suggestion"
-    echo ""
-    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    echo -e "${BOLD}${CYAN}SHELL${NC}"
-    echo ""
-    echo -e "    ${GREEN}sync${NC}             Sync lf sidebar to shell's current directory"
-    echo ""
-    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    echo -e "  ${DIM}Other keybinds (vi-mode, pane navigation, aliases, etc.) depend${NC}"
-    echo -e "  ${DIM}on your global config. Re-run the installer to optionally integrate${NC}"
-    echo -e "  ${DIM}NeoTUI features into your global tmux, zsh, lf, and Neovim configs.${NC}"
-    echo ""
+SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+export NEOTUI_ROOT="$ROOT_DIR"
+export XDG_CONFIG_HOME="$ROOT_DIR"
+export XDG_DATA_HOME="$ROOT_DIR/.local/data"
+export XDG_STATE_HOME="$ROOT_DIR/.local/state"
+export XDG_CACHE_HOME="$ROOT_DIR/.local/cache"
+export PATH="$ROOT_DIR/.local/bin:$PATH"
+export ZDOTDIR="$ROOT_DIR/shell"
+export HISTFILE="$XDG_STATE_HOME/zsh/history"
+export EDITOR="nvim"
+export VISUAL="nvim"
+export NVIM_APPNAME="nvim"
+
+mkdir -p "$XDG_DATA_HOME" "$XDG_STATE_HOME" "$XDG_CACHE_HOME" "$(dirname "$HISTFILE")"
+
+usage() {
+  printf 'Usage: neotui [tmux|zsh|nvim|lf] [args...]\n'
 }
 
-# ─── Parse arguments ─────────────────────────────────────────
-case "${1:-}" in
-    -h|--help)
-        show_help
-        exit 0
-        ;;
-esac
+command_name="${1:-tmux}"
+if [ "$#" -gt 0 ]; then
+  shift
+fi
 
-# ─── Configuration ───────────────────────────────────────────
-SESSION_NAME="neotui"
-STATE_DIR="$HOME/.local/share/neotui"
-WIDTH_FILE="$STATE_DIR/sidebar-width"
-DEFAULT_WIDTH=30
-START_DIR="${1:-.}"
-
-# Resolve to absolute path
-START_DIR="$(cd "$START_DIR" 2>/dev/null && pwd || echo "$PWD")"
-
-mkdir -p "$STATE_DIR"
-
-# Read persisted sidebar width
-load_width() {
-    if [[ -f "$WIDTH_FILE" ]]; then
-        local saved
-        saved=$(<"$WIDTH_FILE")
-        if [[ "$saved" =~ ^[0-9]+$ ]] && (( saved >= 10 && saved <= 200 )); then
-            echo "$saved"
-            return
-        fi
-    fi
-    echo "$DEFAULT_WIDTH"
-}
-
-# ─── Pre-flight checks ──────────────────────────────────────
-if ! command -v tmux &>/dev/null; then
-    echo "Error: tmux is not installed" >&2
+case "$command_name" in
+  tmux)
+    exec tmux -L neotui -f "$ROOT_DIR/tmux/tmux.conf" new-session -A -s neotui
+    ;;
+  zsh)
+    exec zsh "$@"
+    ;;
+  nvim)
+    exec nvim "$@"
+    ;;
+  lf)
+    exec lf "$@"
+    ;;
+  help|-h|--help)
+    usage
+    ;;
+  *)
+    usage >&2
     exit 1
-fi
-
-if ! command -v lf &>/dev/null; then
-    echo "Warning: lf is not installed (sidebar will not work)" >&2
-    echo "Install with: curl -fsSL https://raw.githubusercontent.com/RobLaughlin/NeoTUI/main/install.sh | bash" >&2
-fi
-
-# ─── Attach to existing session if it exists ─────────────────
-if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
-    echo "Attaching to existing session '$SESSION_NAME'..."
-    exec tmux attach-session -t "$SESSION_NAME"
-fi
-
-# ─── Create new session ─────────────────────────────────────
-tmux new-session -d -s "$SESSION_NAME" -c "$START_DIR"
-
-# Set environment variables for isolation
-# NEOTUI_DIR: base directory for all NeoTUI configs
-# NVIM_APPNAME: makes Neovim read from ~/.config/neotui/ instead of ~/.config/nvim/
-# ZDOTDIR: makes zsh read shell/.zshrc instead of ~/.zshrc
-tmux set-environment -t "$SESSION_NAME" NEOTUI_DIR "$NEOTUI_DIR"
-tmux set-environment -t "$SESSION_NAME" NVIM_APPNAME "neotui"
-tmux set-environment -t "$SESSION_NAME" ZDOTDIR "$NEOTUI_DIR/shell"
-
-# Respawn the initial pane so it picks up the new environment
-# (the shell started before ZDOTDIR was set)
-tmux respawn-pane -t "$SESSION_NAME:1.1" -k
-
-# Rename the first window
-tmux rename-window -t "$SESSION_NAME:1" 'main'
-
-# Create sidebar pane with lf on the left (using saved width)
-if command -v lf &>/dev/null; then
-    SIDEBAR_WIDTH=$(load_width)
-    tmux split-window -t "$SESSION_NAME:1" -hb -l "$SIDEBAR_WIDTH" -c "$START_DIR" \
-        "lf -config '$NEOTUI_DIR/lf/lfrc'"
-    # Focus back to the right (main) pane
-    tmux select-pane -t "$SESSION_NAME:1" -R
-fi
-
-# Source NeoTUI's own tmux config (not ~/.tmux.conf)
-tmux source-file "$NEOTUI_DIR/tmux/tmux.conf" 2>/dev/null || true
-
-# ─── Attach ──────────────────────────────────────────────────
-exec tmux attach-session -t "$SESSION_NAME"
+    ;;
+esac

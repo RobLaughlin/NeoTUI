@@ -1,0 +1,13 @@
+{
+  "name": "neotui",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Minimal local-first TUI baseline for tmux, zsh, and neovim",
+  "scripts": {
+    "prepare": "husky",
+    "check:shell": "bash scripts/check-shell.sh"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}
