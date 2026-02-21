@@ -67,6 +67,11 @@ Subcommands:
 Tmux defaults:
 - top status bar with tab-style window list
 - use `Shift+Left` / `Shift+Right` (or `Alt+Left` / `Alt+Right`) to switch tabs
+- zsh is the default shell inside NeoTUI tmux panes
+
+Zsh defaults:
+- NeoTUI uses repo-scoped zsh config in `shell/`
+- prompt matches the previous main-branch NeoTUI style (`[HH:MM] ~/path (git-branch) >`)
 
 ## Development checks
 

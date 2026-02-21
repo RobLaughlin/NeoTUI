@@ -1,8 +1,6 @@
-export EDITOR=nvim
-export VISUAL=nvim
+export NEOTUI_DIR="${NEOTUI_ROOT:-$(cd "$(dirname "${(%):-%N}")/.." && pwd)}"
 
-setopt auto_cd
-setopt interactive_comments
-
-alias v='nvim'
-alias ll='ls -lah'
+source "$NEOTUI_DIR/shell/env.zsh"
+source "$NEOTUI_DIR/shell/vi-mode.zsh"
+source "$NEOTUI_DIR/shell/hooks.zsh"
+source "$NEOTUI_DIR/shell/aliases.zsh"
