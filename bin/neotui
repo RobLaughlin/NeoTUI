@@ -33,6 +33,18 @@ mkdir -p "$XDG_DATA_HOME" "$XDG_STATE_HOME" "$XDG_CACHE_HOME" "$(dirname "$HISTF
 
 usage() {
   printf 'Usage: neotui [--debug] [tmux|zsh|nvim|lf] [args...]\n'
+  printf '\n'
+  printf 'Subcommands:\n'
+  printf '  tmux         Start NeoTUI tmux session (default)\n'
+  printf '  zsh          Start NeoTUI zsh\n'
+  printf '  nvim [args] Start NeoTUI neovim\n'
+  printf '  lf           Start NeoTUI lf\n'
+  printf '\n'
+  printf 'Installed tmux defaults:\n'
+  printf '  - top status bar with tab navigation\n'
+  printf '  - pane navigation: <prefix> h/j/k/l\n'
+  printf '  - pane split: <prefix>+| and <prefix>+-\n'
+  printf '  - pane resize: <prefix>+H/J/K/L\n'
 }
 
 print_tool_info() {

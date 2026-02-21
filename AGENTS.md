@@ -21,6 +21,7 @@ Refactor principles:
 - when asked to update configs in `~/projects/NeoTUI`, update NeoTUI-managed configs in this repo, not global configs like `~/.zshrc`
 - enforce runtime minimums from `REQUIREMENTS.txt`
 - when installer defaults change, update both `README.md` and `install-local.sh` install messaging so users are informed during installation
+- when NeoTUI hotkeys/default bindings change, update `neotui --help` / `neotui -h` output to reflect the new defaults
 
 Quality gates:
 - all shell scripts must pass syntax checks
