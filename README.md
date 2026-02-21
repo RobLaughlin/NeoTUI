@@ -49,11 +49,24 @@ Installer behavior:
 neotui
 ```
 
+Debug mode:
+
+```bash
+neotui --debug
+```
+
+This prints an isolation/debug report (tool paths, versions, and global config link status) before launching.
+This command only prints debug information and exits.
+
 Subcommands:
 - `neotui tmux` (default)
 - `neotui zsh`
 - `neotui nvim [args...]`
 - `neotui lf`
+
+Tmux defaults:
+- top status bar with tab-style window list
+- use `Shift+Left` / `Shift+Right` (or `Alt+Left` / `Alt+Right`) to switch tabs
 
 ## Development checks
 

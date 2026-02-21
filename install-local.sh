@@ -335,6 +335,24 @@ ensure_requirements() {
   done
 }
 
+cleanup_legacy_link() {
+  local symlink_path="$1"
+  local expected_target="$2"
+
+  if [ ! -L "$symlink_path" ]; then
+    return 0
+  fi
+
+  local actual_target
+  actual_target="$(readlink "$symlink_path")"
+  if [ "$actual_target" != "$expected_target" ]; then
+    return 0
+  fi
+
+  rm -f "$symlink_path"
+  printf 'Removed legacy NeoTUI global symlink: %s -> %s\n' "$symlink_path" "$actual_target"
+}
+
 if [ ! -f "$SOURCE" ]; then
   printf 'Error: missing launcher at %s\n' "$SOURCE" >&2
   exit 1
@@ -342,6 +360,11 @@ fi
 
 load_requirements
 ensure_requirements
+
+cleanup_legacy_link "$HOME/.tmux.conf" "$ROOT_DIR/tmux/tmux.conf"
+cleanup_legacy_link "$HOME/.zshrc" "$ROOT_DIR/shell/.zshrc"
+cleanup_legacy_link "$HOME/.config/nvim/init.lua" "$ROOT_DIR/nvim/init.lua"
+cleanup_legacy_link "$HOME/.config/nvim" "$ROOT_DIR/nvim"
 
 mkdir -p "$BIN_DIR"
 
