@@ -48,12 +48,34 @@ if command -v go-grip >/dev/null 2>&1; then
   mdpreview() { go-grip "$@"; }
 fi
 
-sync() {
-  if [[ -n "${TMUX:-}" ]] && command -v lf >/dev/null 2>&1; then
-    lf -remote "send :cd '$PWD'; on-cd" 2>/dev/null && echo "lf -> $PWD"
-  else
-    echo "Not in a tmux session or lf not installed"
+lfsync() {
+  if [[ -z "${TMUX:-}" ]]; then
+    echo "Not in a tmux session"
+    return 1
   fi
+
+  local window_id
+  window_id="$(tmux display-message -p '#{window_id}')"
+
+  local target_pane
+  target_pane="$({
+    tmux list-panes -t "$window_id" -F '#{pane_id} #{pane_current_command} #{pane_last}'
+  } | awk -v current="${TMUX_PANE:-}" '$2 == "lf" && $1 != current { if ($3 == "1") { print $1; found=1; exit } if (first == "") first=$1 } END { if (!found && first != "") print first }')"
+
+  if [[ -z "$target_pane" ]]; then
+    echo "No lf pane found in this window"
+    return 1
+  fi
+
+  local target_dir
+  target_dir="$(tmux display-message -t "$target_pane" -p '#{pane_current_path}')"
+  if [[ -z "$target_dir" ]]; then
+    echo "Could not read lf pane directory"
+    return 1
+  fi
+
+  builtin cd -- "$target_dir" || return 1
+  echo "zsh -> $target_dir"
 }
 
 alias cls='clear'

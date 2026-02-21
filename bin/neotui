@@ -52,6 +52,10 @@ usage() {
   printf '  - file preview is off by default\n'
   printf '  - gh: jump to home directory\n'
   printf '  - gz: toggle file preview (off <-> 2:3 preview)\n'
+  printf '  - gs: sync lf directory to zsh pane path (same window)\n'
+  printf '\n'
+  printf 'Installed zsh defaults:\n'
+  printf '  - lfsync: sync zsh cwd to lf pane path (same window)\n'
 }
 
 print_tool_info() {

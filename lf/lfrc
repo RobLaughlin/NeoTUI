@@ -22,5 +22,28 @@ cmd togglepreview &{{
   fi
 }}
 
+cmd syncshell &{{
+  if [ -z "${TMUX:-}" ]; then
+    lf -remote "send $id echo 'Not in a tmux session'"
+    exit 0
+  fi
+
+  window_id="$(tmux display-message -p '#{window_id}')"
+  target_pane="$({
+    tmux list-panes -t "$window_id" -F '#{pane_id} #{pane_current_command} #{pane_last}'
+  } | awk -v current="${TMUX_PANE:-}" '$2 == "zsh" && $1 != current { if ($3 == "1") { print $1; found=1; exit } if (first == "") first=$1 } END { if (!found && first != "") print first }')"
+
+  if [ -z "$target_pane" ]; then
+    lf -remote "send $id echo 'No zsh pane found in this window'"
+    exit 0
+  fi
+
+  target_dir="$(tmux display-message -t "$target_pane" -p '#{pane_current_path}')"
+  escaped_dir="$(printf '%s' "$target_dir" | sed "s/'/'\\''/g")"
+  lf -remote "send $id :cd '$escaped_dir'"
+  lf -remote "send $id echo 'lf -> $target_dir'"
+}}
+
 map gh cd ~
 map gz togglepreview
+map gs syncshell

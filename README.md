@@ -52,7 +52,8 @@ Default setup applied at install time:
 - enables tmux pane resize hotkeys (`<prefix>+H/J/K/L`)
 - enables tmux `<prefix>+E` to toggle the lf sidebar
 - opens lf as a left sidebar by default on new `neotui` sessions
-- enables lf keybinds: `gh` (home), `gz` (toggle file preview)
+- enables lf keybinds: `gh` (home), `gz` (toggle file preview), `gs` (sync to zsh dir)
+- enables zsh helper: `lfsync` (sync to lf directory)
 
 ## Usage
 
@@ -89,10 +90,12 @@ Lf defaults:
 - file preview is off by default
 - `gh` jumps to home directory
 - `gz` toggles file preview (off <-> `2:3` preview)
+- `gs` syncs lf to the current zsh pane directory (same tmux window)
 
 Zsh defaults:
 - NeoTUI uses repo-scoped zsh config in `shell/`
 - prompt matches the previous main-branch NeoTUI style (`[HH:MM] ~/path (git-branch) >`)
+- `lfsync` changes zsh cwd to the lf pane directory (same tmux window)
 
 ## Development checks
 
