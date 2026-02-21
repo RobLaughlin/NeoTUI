@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="${NEOTUI_ROOT:-}"
+if [ -z "$ROOT_DIR" ]; then
+  ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+fi
+
+STATE_DIR="$ROOT_DIR/.local/state/lf"
+WIDTH_FILE="$STATE_DIR/sidebar-width"
+DEFAULT_WIDTH=32
+
+mkdir -p "$STATE_DIR"
+
+current_window="$(tmux display-message -p '#{window_id}')"
+lf_pane="$(tmux list-panes -t "$current_window" -F '#{pane_id} #{pane_current_command}' | awk '$2 == "lf" {print $1; exit}')"
+
+load_width() {
+  if [ -f "$WIDTH_FILE" ]; then
+    local saved
+    saved="$(<"$WIDTH_FILE")"
+    if [[ "$saved" =~ ^[0-9]+$ ]] && [ "$saved" -ge 10 ] && [ "$saved" -le 200 ]; then
+      printf '%s' "$saved"
+      return
+    fi
+  fi
+  printf '%s' "$DEFAULT_WIDTH"
+}
+
+save_width() {
+  local pane_id="$1"
+  local width
+  width="$(tmux display-message -t "$pane_id" -p '#{pane_width}')"
+  if [[ "$width" =~ ^[0-9]+$ ]]; then
+    printf '%s\n' "$width" > "$WIDTH_FILE"
+  fi
+}
+
+if [ -n "$lf_pane" ]; then
+  save_width "$lf_pane"
+  tmux kill-pane -t "$lf_pane"
+  exit 0
+fi
+
+sidebar_width="$(load_width)"
+cur_dir="$(tmux display-message -p '#{pane_current_path}')"
+tmux split-window -t "$current_window" -hb -l "$sidebar_width" -c "$cur_dir" "lf -config '$ROOT_DIR/lf/lfrc'"
+tmux select-pane -t "$current_window" -R

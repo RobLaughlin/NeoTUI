@@ -1,4 +1,26 @@
 set hidden
-set preview true
+set nopreview
+set ratios 1
 set drawbox true
 set icons false
+
+cmd togglepreview &{{
+  state_dir="$XDG_STATE_HOME/lf"
+  session_id="$(printf '%s' "$id" | tr -cd 'A-Za-z0-9_-')"
+  enabled_file="$state_dir/preview-enabled-$session_id"
+
+  mkdir -p "$state_dir"
+
+  if [ -f "$enabled_file" ]; then
+    rm -f "$enabled_file"
+    lf -remote "send $id :set nopreview"
+    lf -remote "send $id :set ratios 1"
+  else
+    : > "$enabled_file"
+    lf -remote "send $id :set ratios 2:3"
+    lf -remote "send $id :set preview"
+  fi
+}}
+
+map gh cd ~
+map gz togglepreview

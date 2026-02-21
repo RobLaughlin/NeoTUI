@@ -372,6 +372,9 @@ printf '  2) Setting zsh as the default shell inside NeoTUI tmux\n'
 printf '  3) Enabling tmux pane navigation hotkeys (<prefix> h/j/k/l)\n'
 printf '  4) Enabling tmux pane split hotkeys (<prefix>+| and <prefix>+-)\n'
 printf '  5) Enabling tmux pane resize hotkeys (<prefix>+H/J/K/L)\n'
+printf '  6) Enabling tmux <prefix>+E to toggle lf sidebar\n'
+printf '  7) Opening lf sidebar by default on new neotui session\n'
+printf '  8) Enabling lf keybinds: gh (home), gz (toggle file preview)\n'
 
 mkdir -p "$BIN_DIR"
 

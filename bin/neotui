@@ -45,6 +45,13 @@ usage() {
   printf '  - pane navigation: <prefix> h/j/k/l\n'
   printf '  - pane split: <prefix>+| and <prefix>+-\n'
   printf '  - pane resize: <prefix>+H/J/K/L\n'
+  printf '  - lf toggle: <prefix>+E (open/close left sidebar)\n'
+  printf '\n'
+  printf 'Installed lf defaults:\n'
+  printf '  - opens by default as left sidebar on new neotui session\n'
+  printf '  - file preview is off by default\n'
+  printf '  - gh: jump to home directory\n'
+  printf '  - gz: toggle file preview (off <-> 2:3 preview)\n'
 }
 
 print_tool_info() {
@@ -153,7 +160,15 @@ fi
 
 case "$command_name" in
   tmux)
-    exec tmux -L neotui -f "$ROOT_DIR/tmux/tmux.conf" new-session -A -s neotui
+    if tmux -L neotui has-session -t neotui 2>/dev/null; then
+      exec tmux -L neotui -f "$ROOT_DIR/tmux/tmux.conf" attach-session -t neotui
+    fi
+
+    tmux -L neotui -f "$ROOT_DIR/tmux/tmux.conf" new-session -d -s neotui -c "$PWD"
+    tmux -L neotui set-environment -t neotui NEOTUI_ROOT "$ROOT_DIR"
+    tmux -L neotui split-window -t neotui:0 -hb -l 32 -c "$PWD" "lf -config '$ROOT_DIR/lf/lfrc'"
+    tmux -L neotui select-pane -t neotui:0 -R
+    exec tmux -L neotui -f "$ROOT_DIR/tmux/tmux.conf" attach-session -t neotui
     ;;
   zsh)
     exec zsh "$@"
@@ -162,7 +177,7 @@ case "$command_name" in
     exec nvim "$@"
     ;;
   lf)
-    exec lf "$@"
+    exec lf -config "$ROOT_DIR/lf/lfrc" "$@"
     ;;
   help|-h|--help)
     usage

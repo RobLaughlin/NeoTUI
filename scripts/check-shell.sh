@@ -12,6 +12,10 @@ if [ -f "bin/neotui" ]; then
   shell_files+=("bin/neotui")
 fi
 
+if [ -f "bin/neotui-toggle-lf" ]; then
+  shell_files+=("bin/neotui-toggle-lf")
+fi
+
 if [ -f ".husky/pre-commit" ]; then
   shell_files+=(".husky/pre-commit")
 fi
