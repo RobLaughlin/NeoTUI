@@ -8,3 +8,5 @@ vim.opt.tabstop = 2
 vim.g.mapleader = " "
 vim.keymap.set("n", "<leader>w", "<cmd>w<cr>")
 vim.keymap.set("n", "<leader>q", "<cmd>q<cr>")
+vim.keymap.set("n", "<C-h>", "gT", { noremap = true, silent = true })
+vim.keymap.set("n", "<C-l>", "gt", { noremap = true, silent = true })

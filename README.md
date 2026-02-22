@@ -70,7 +70,8 @@ Default setup applied at install time:
 - enables tmux `<prefix>+E` to toggle the lf sidebar
 - opens lf as a left sidebar by default on new `neotui` sessions
 - enables lf auto-refresh on file create/delete changes (`watch` + `period 2` fallback)
-- enables lf keybinds: `gh` (home), `gz` (toggle file preview), `gs` (sync to zsh dir), `l`/`Enter` (enter dir; files open in split/new window)
+- enables lf keybinds: `gh` (home), `gz` (toggle file preview), `gs` (sync to zsh dir), `l`/`Enter` (enter dir; files open in nvim split/new window)
+- enables nvim tab hotkeys: `Ctrl+h` (previous tab), `Ctrl+l` (next tab)
 - enables lf queue flow: `yy`/`yY` (toggle copy/cut), `p`/`P` (execute; copy queue persists), `yq` (status), `c` (clear)
 - enables lf file-operation hotkeys: `md` (mkdir), `mf` (touch), `dd` (safe trash)
 - enables lf undo/redo hotkeys: `gu`/`gr` (session-scoped)
@@ -114,8 +115,9 @@ Lf defaults:
 - `gh` jumps to home directory
 - `gz` toggles file preview (off <-> `2:3` preview)
 - `gs` syncs lf to the current zsh pane directory (same tmux window)
-- `l` enters a directory, or opens a file in `nvim` in a new split pane (same tmux window)
+- `l` enters a directory, or opens a file in `nvim` in the same window (reuses existing `nvim` pane with `:tabedit`, otherwise creates a new split)
 - `Enter` enters a directory, or opens a file in `nvim` in a new tmux window
+- nvim tabs can be navigated with `gt`/`gT` (next/prev), `:tabn`/`:tabp`, and closed with `:tabclose`
 - `yy`/`yY` toggle queueing current item for copy/cut
 - queued marker in left indicator lane: `y` for copy, `Y` for cut
 - `p` executes queued copy items and keeps copy queue, `P` executes queued cut items and clears cut queue
@@ -129,6 +131,10 @@ Zsh defaults:
 - NeoTUI uses installed runtime zsh config in `~/.local/share/neotui/config/shell/`
 - prompt matches the previous main-branch NeoTUI style (`[HH:MM] ~/path (git-branch) >`)
 - `lfsync` changes zsh cwd to the lf pane directory (same tmux window)
+
+Nvim defaults:
+- `Ctrl+h` switches to the previous nvim tab
+- `Ctrl+l` switches to the next nvim tab
 
 ## Development checks
 

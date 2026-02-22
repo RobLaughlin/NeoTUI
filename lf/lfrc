@@ -57,15 +57,21 @@ cmd smartopenpane &{{
 
   window_id="$(tmux display-message -p '#{window_id}')"
   current_pane="$(tmux display-message -p '#{pane_id}')"
+  existing_nvim_pane="$({ tmux list-panes -t "$window_id" -F '#{pane_id} #{pane_current_command} #{pane_last}'; } | awk '$2 == "nvim" && $3 == "1" { print $1; found=1; exit } $2 == "nvim" && first == "" { first=$1 } END { if (!found && first != "") print first }')"
+
+  if [ -n "$existing_nvim_pane" ]; then
+    vim_expr_path="$(printf '%s' "$f" | sed "s/'/''/g")"
+    tmux send-keys -t "$existing_nvim_pane" Escape ":execute 'tabedit ' . fnameescape('$vim_expr_path')" C-m
+    exit 0
+  fi
+
   target_pane="$({ tmux list-panes -t "$window_id" -F '#{pane_id} #{pane_current_command}'; } | awk '$2 != "lf" { print $1; exit }')"
   [ -z "$target_pane" ] && target_pane="$current_pane"
 
   target_dir="$(dirname -- "$f")"
   escaped_file="$(printf '%s' "$f" | sed "s/'/'\\''/g")"
   new_pane="$(tmux split-window -P -F '#{pane_id}' -t "$target_pane" -v -c "$target_dir" "nvim -- '$escaped_file'" 2>/dev/null || true)"
-  if [ -n "$new_pane" ]; then
-    tmux select-pane -t "$new_pane"
-  else
+  if [ -z "$new_pane" ]; then
     lf -remote "send $id echo 'Unable to split pane here'"
   fi
 }}
