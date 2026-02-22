@@ -96,7 +96,7 @@ Lf defaults:
 - `gz` toggles file preview (off <-> `2:3` preview)
 - `gs` syncs lf to the current zsh pane directory (same tmux window)
 - `yy`/`yY` toggle queueing current item for copy/cut
-- queued marker in left indicator lane: `c` for copy, `C` for cut
+- queued marker in left indicator lane: `y` for copy, `Y` for cut
 - `p` executes queued copy items, `P` executes queued cut items
 - `yq` shows queue status and `c` clears all queues
 - `md` creates a directory, `mf` creates a file

@@ -54,7 +54,7 @@ usage() {
   printf '  - gz: toggle file preview (off <-> 2:3 preview)\n'
   printf '  - gs: sync lf directory to zsh pane path (same window)\n'
   printf '  - yy/yY: toggle queue current item for copy/cut\n'
-  printf '  - queued marker: c (copy), C (cut)\n'
+  printf '  - queued marker: y (copy), Y (cut)\n'
   printf '  - p/P: execute queued copy/cut items (queues clear after run)\n'
   printf '  - yq: show queue status, c: clear all queues\n'
   printf '  - md: create directory, mf: create file\n'
