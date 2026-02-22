@@ -1,12 +1,12 @@
-vim.opt.number = true
-vim.opt.relativenumber = true
-vim.opt.termguicolors = true
-vim.opt.expandtab = true
-vim.opt.shiftwidth = 2
-vim.opt.tabstop = 2
+local init_file = debug.getinfo(1, "S").source:sub(2)
+local config_root = vim.fn.fnamemodify(init_file, ":p:h")
+vim.opt.rtp:prepend(config_root)
 
-vim.g.mapleader = " "
-vim.keymap.set("n", "<leader>w", "<cmd>w<cr>")
-vim.keymap.set("n", "<leader>q", "<cmd>q<cr>")
-vim.keymap.set("n", "<C-h>", "gT", { noremap = true, silent = true })
-vim.keymap.set("n", "<C-l>", "gt", { noremap = true, silent = true })
+local state_root = vim.env.XDG_STATE_HOME or vim.fn.stdpath("state")
+local ide_flag = state_root .. "/nvim/ide-profile-enabled"
+
+if vim.fn.filereadable(ide_flag) == 1 then
+  require("neotui.ide").setup()
+else
+  require("neotui.minimal").setup()
+end

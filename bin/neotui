@@ -78,6 +78,8 @@ usage() {
   printf '%bNvim%b\n' "$C_SECTION" "$C_RESET"
   printf '  - keybinds: %bCtrl+h%b (previous tab), %bCtrl+l%b (next tab)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
   printf '  - commands: %b:tabn%b / %b:tabp%b / %b:tabclose%b\n' "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET"
+  printf '  - profile: installer-managed recommended IDE mode (default enabled)\n'
+  printf '  - IDE includes: lazy.nvim, built-in LSPs, blink.cmp, LuaSnip, treesitter, telescope, gitsigns, conform+nvim-lint, codeium\n'
 }
 
 print_tool_info() {

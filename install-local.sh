@@ -14,6 +14,7 @@ LF_UPSTREAM_VERSION="r41"
 export PATH="$INSTALL_ROOT/bin:$PATH"
 
 declare -A REQUIRED_VERSIONS=()
+ENABLE_NVIM_IDE_PROFILE=1
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   C_RESET=$'\033[0m'
@@ -182,6 +183,26 @@ install_optional_zsh_plugins() {
       printf '  - optional package unavailable: %s (continuing)\n' "$pkg"
     fi
   done
+}
+
+install_optional_nvim_ide_tools() {
+  local manager="$1"
+
+  if [ "$ENABLE_NVIM_IDE_PROFILE" -ne 1 ]; then
+    return 0
+  fi
+
+  if [ "$manager" = "none" ]; then
+    printf 'Skipping optional nvim IDE tool install (no supported package manager found).\n'
+    return 0
+  fi
+
+  printf 'Installing optional nvim IDE runtime tools...\n'
+  if install_with_pkg_manager ripgrep "$manager"; then
+    printf '  - installed optional package: ripgrep\n'
+  else
+    printf '  - optional package unavailable: ripgrep (continuing; telescope live grep may be limited)\n'
+  fi
 }
 
 download_file() {
@@ -398,12 +419,35 @@ install_runtime_layout() {
   copy_config_with_prompt "$ROOT_DIR/tmux/tmux.conf" "$INSTALL_ROOT/config/tmux/tmux.conf" "tmux/tmux.conf"
   copy_config_with_prompt "$ROOT_DIR/lf/lfrc" "$INSTALL_ROOT/config/lf/lfrc" "lf/lfrc"
   copy_config_with_prompt "$ROOT_DIR/nvim/init.lua" "$INSTALL_ROOT/config/nvim/init.lua" "nvim/init.lua"
+  copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/minimal.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/minimal.lua" "nvim/lua/neotui/minimal.lua"
+  copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/ide/init.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/init.lua" "nvim/lua/neotui/ide/init.lua"
+  copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/ide/options.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/options.lua" "nvim/lua/neotui/ide/options.lua"
+  copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/ide/keymaps.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/keymaps.lua" "nvim/lua/neotui/ide/keymaps.lua"
+  copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/ide/lazy.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/lazy.lua" "nvim/lua/neotui/ide/lazy.lua"
+  copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/ide/plugins.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/plugins.lua" "nvim/lua/neotui/ide/plugins.lua"
   copy_config_with_prompt "$ROOT_DIR/shell/.zshrc" "$INSTALL_ROOT/config/shell/.zshrc" "shell/.zshrc"
   copy_config_with_prompt "$ROOT_DIR/shell/env.zsh" "$INSTALL_ROOT/config/shell/env.zsh" "shell/env.zsh"
   copy_config_with_prompt "$ROOT_DIR/shell/vi-mode.zsh" "$INSTALL_ROOT/config/shell/vi-mode.zsh" "shell/vi-mode.zsh"
   copy_config_with_prompt "$ROOT_DIR/shell/hooks.zsh" "$INSTALL_ROOT/config/shell/hooks.zsh" "shell/hooks.zsh"
   copy_config_with_prompt "$ROOT_DIR/shell/aliases.zsh" "$INSTALL_ROOT/config/shell/aliases.zsh" "shell/aliases.zsh"
   copy_config_with_prompt "$ROOT_DIR/shell/plugins.zsh" "$INSTALL_ROOT/config/shell/plugins.zsh" "shell/plugins.zsh"
+}
+
+prompt_nvim_ide_profile() {
+  local ide_flag="$INSTALL_ROOT/state/nvim/ide-profile-enabled"
+
+  mkdir -p "$(dirname "$ide_flag")"
+  printf 'Enable NeoTUI recommended nvim IDE profile (LSP, completion, treesitter, telescope, gitsigns, formatting/linting, codeium)? [Y/n]: '
+  read -r enable_ide
+  if [[ "$enable_ide" =~ ^[Nn]$ ]]; then
+    ENABLE_NVIM_IDE_PROFILE=0
+    rm -f "$ide_flag"
+    printf 'Keeping minimal NeoTUI nvim profile.\n'
+  else
+    ENABLE_NVIM_IDE_PROFILE=1
+    : > "$ide_flag"
+    printf 'Enabled NeoTUI recommended nvim IDE profile.\n'
+  fi
 }
 
 prompt_history_reset() {
@@ -448,6 +492,7 @@ print_applied_defaults() {
   printf '%bNvim%b\n' "$C_SECTION" "$C_RESET"
   printf '  - keybinds: %bCtrl+h%b (previous tab), %bCtrl+l%b (next tab)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
   printf '  - commands: %b:tabn%b / %b:tabp%b / %b:tabclose%b\n' "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET"
+  printf '  - profile: recommended IDE defaults are installer prompt controlled (default: enabled)\n'
   printf '\n'
 }
 
@@ -459,7 +504,11 @@ fi
 load_requirements
 ensure_requirements
 
-install_optional_zsh_plugins "$(detect_pkg_manager)"
+prompt_nvim_ide_profile
+
+pkg_manager="$(detect_pkg_manager)"
+install_optional_zsh_plugins "$pkg_manager"
+install_optional_nvim_ide_tools "$pkg_manager"
 
 cleanup_legacy_link "$HOME/.tmux.conf" "$ROOT_DIR/tmux/tmux.conf"
 cleanup_legacy_link "$HOME/.zshrc" "$ROOT_DIR/shell/.zshrc"

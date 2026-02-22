@@ -100,6 +100,9 @@ Default setup applied at install time:
 
 | Type | Value | Notes |
 | --- | --- | --- |
+| Feature | Recommended IDE profile prompt | Installer default is `Yes` |
+| Feature | IDE profile contents | lazy.nvim, built-in LSPs, blink.cmp, LuaSnip, treesitter, telescope, gitsigns, formatting/linting, codeium |
+| Feature | `ripgrep` | Recommended for Telescope `live_grep` |
 | Keybind | `Ctrl+h` | Previous tab |
 | Keybind | `Ctrl+l` | Next tab |
 | Command | `:tabn`, `:tabp`, `:tabclose` | Tab navigation and close |
@@ -167,6 +170,9 @@ Subcommands:
 
 | Type | Value | Notes |
 | --- | --- | --- |
+| Feature | Recommended IDE profile prompt | Installer default is `Yes` |
+| Feature | IDE profile contents | lazy.nvim, built-in LSPs, blink.cmp, LuaSnip, treesitter, telescope, gitsigns, formatting/linting, codeium |
+| Feature | `ripgrep` | Recommended for Telescope `live_grep` |
 | Keybind | `Ctrl+h` | Previous tab |
 | Keybind | `Ctrl+l` | Next tab |
 | Command | `:tabn`, `:tabp`, `:tabclose` | Tab navigation and close |
