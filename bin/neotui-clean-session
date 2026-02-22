@@ -15,5 +15,5 @@ if [ -z "$root_dir" ]; then
   root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fi
 
-rm -rf -- "$root_dir/.local/state/lf/sessions/$session_id"
-rm -f -- "$root_dir/.local/data/lf/tags"
+rm -rf -- "$root_dir/state/lf/sessions/$session_id"
+rm -f -- "$root_dir/data/lf/tags"

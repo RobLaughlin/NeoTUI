@@ -10,7 +10,9 @@ Core scope:
 
 ## Isolation model
 
-- NeoTUI config sources live only in this repo (`tmux/`, `shell/`, `lf/`, `nvim/`).
+- This repo provides NeoTUI default templates (`tmux/`, `shell/`, `lf/`, `nvim/`).
+- Installer copies defaults into NeoTUI runtime home at `~/.local/share/neotui/config/`.
+- Installed runtime configs are the active source of truth for NeoTUI.
 - The installer only adds one global command: `neotui`.
 - NeoTUI does not write to `~/.tmux.conf`, `~/.zshrc`, `~/.config/nvim`, or other global configs.
 
@@ -35,13 +37,28 @@ Runtime minimums are defined in `REQUIREMENTS.txt`:
 ./install-local.sh
 ```
 
-This creates a symlink for `neotui` in `~/.local/bin/neotui`.
+This creates a symlink for `neotui` in `~/.local/bin/neotui` pointing to the installed runtime launcher in `~/.local/share/neotui/bin/neotui`.
+
+Runtime directory tree:
+
+```text
+~/.local/share/neotui/
+  bin/      # runtime launchers and helpers
+  config/   # active NeoTUI configs (source of truth)
+  data/     # app data (e.g. lf tags)
+  state/    # session/runtime state (queues, trash, history)
+  cache/    # cache files
+  tools/    # NeoTUI-managed tool installs (e.g. upstream lf/nvim)
+```
 
 Installer behavior:
 - checks installed versions against `REQUIREMENTS.txt`
 - prompts before installing/upgrading missing or outdated tools
 - prefers distro package manager installs
 - falls back to upstream binaries for `nvim` and `lf` when distro packages are unavailable or below minimum
+- installs NeoTUI runtime home at `~/.local/share/neotui`
+- copies default configs from this repo into runtime config paths
+- prompts per config file on reinstall when installed configs differ from repo defaults
 - prints applied NeoTUI defaults during install so users know what is being enabled
 
 Default setup applied at install time:
@@ -105,7 +122,7 @@ Lf defaults:
 - lf undo/redo and trash are scoped to the current NeoTUI tmux session
 
 Zsh defaults:
-- NeoTUI uses repo-scoped zsh config in `shell/`
+- NeoTUI uses installed runtime zsh config in `~/.local/share/neotui/config/shell/`
 - prompt matches the previous main-branch NeoTUI style (`[HH:MM] ~/path (git-branch) >`)
 - `lfsync` changes zsh cwd to the lf pane directory (same tmux window)
 

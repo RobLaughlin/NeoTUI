@@ -15,21 +15,23 @@ done
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+export NEOTUI_HOME="$ROOT_DIR"
 export NEOTUI_ROOT="$ROOT_DIR"
-export XDG_CONFIG_HOME="$ROOT_DIR"
-export XDG_DATA_HOME="$ROOT_DIR/.local/data"
-export XDG_STATE_HOME="$ROOT_DIR/.local/state"
-export XDG_CACHE_HOME="$ROOT_DIR/.local/cache"
-export PATH="$ROOT_DIR/.local/bin:$PATH"
-export ZDOTDIR="$ROOT_DIR/shell"
+export XDG_CONFIG_HOME="$ROOT_DIR/config"
+export XDG_DATA_HOME="$ROOT_DIR/data"
+export XDG_STATE_HOME="$ROOT_DIR/state"
+export XDG_CACHE_HOME="$ROOT_DIR/cache"
+export NEOTUI_CONFIG_HOME="$XDG_CONFIG_HOME"
+export GH_CONFIG_DIR="$XDG_CONFIG_HOME/gh"
+export PATH="$ROOT_DIR/bin:$PATH"
+export ZDOTDIR="$XDG_CONFIG_HOME/shell"
 export HISTFILE="$XDG_STATE_HOME/zsh/history"
 export EDITOR="nvim"
 export VISUAL="nvim"
-export NVIM_APPNAME="nvim"
 shell_path="$(command -v zsh)"
 export SHELL="$shell_path"
 
-mkdir -p "$XDG_DATA_HOME" "$XDG_STATE_HOME" "$XDG_CACHE_HOME" "$(dirname "$HISTFILE")"
+mkdir -p "$XDG_CONFIG_HOME" "$XDG_DATA_HOME" "$XDG_STATE_HOME" "$XDG_CACHE_HOME" "$(dirname "$HISTFILE")"
 
 usage() {
   printf 'Usage: neotui [--debug] [tmux|zsh|nvim|lf] [args...]\n'
@@ -119,9 +121,9 @@ debug_report() {
   print_tool_info nvim "nvim --version"
   print_tool_info lf "lf -version"
   printf 'global-config links:\n'
-  print_link_status tmux "$HOME/.tmux.conf" "$ROOT_DIR/tmux/tmux.conf"
-  print_link_status zsh "$HOME/.zshrc" "$ROOT_DIR/shell/.zshrc"
-  print_link_status nvim "$HOME/.config/nvim/init.lua" "$ROOT_DIR/nvim/init.lua"
+  print_link_status tmux "$HOME/.tmux.conf" "$XDG_CONFIG_HOME/tmux/tmux.conf"
+  print_link_status zsh "$HOME/.zshrc" "$XDG_CONFIG_HOME/shell/.zshrc"
+  print_link_status nvim "$HOME/.config/nvim/init.lua" "$XDG_CONFIG_HOME/nvim/init.lua"
   printf 'env:\n'
   printf '  - NEOTUI_ROOT: %s\n' "$NEOTUI_ROOT"
   printf '  - XDG_CONFIG_HOME: %s\n' "$XDG_CONFIG_HOME"
@@ -129,7 +131,7 @@ debug_report() {
   printf '  - XDG_STATE_HOME: %s\n' "$XDG_STATE_HOME"
   printf '  - XDG_CACHE_HOME: %s\n' "$XDG_CACHE_HOME"
   printf '  - ZDOTDIR: %s\n' "$ZDOTDIR"
-  printf '  - NVIM_APPNAME: %s\n' "$NVIM_APPNAME"
+  printf '  - GH_CONFIG_DIR: %s\n' "$GH_CONFIG_DIR"
 }
 
 debug_mode=0
@@ -175,7 +177,7 @@ case "$command_name" in
     if tmux -L neotui has-session -t neotui 2>/dev/null; then
       session_id="$(tmux -L neotui display-message -p -t neotui '#{session_id}')"
       session_id="$(printf '%s' "$session_id" | tr -cd 'A-Za-z0-9_-')"
-      tmux -L neotui -f "$ROOT_DIR/tmux/tmux.conf" attach-session -t neotui
+      tmux -L neotui -f "$XDG_CONFIG_HOME/tmux/tmux.conf" attach-session -t neotui
       if ! tmux -L neotui has-session -t neotui 2>/dev/null; then
         "$ROOT_DIR/bin/neotui-clean-session" "$session_id"
       fi
@@ -186,15 +188,16 @@ case "$command_name" in
     mkdir -p "$XDG_STATE_HOME/lf/sessions"
     rm -f -- "$XDG_DATA_HOME/lf/tags"
 
-    tmux -L neotui -f "$ROOT_DIR/tmux/tmux.conf" new-session -d -s neotui -c "$PWD"
+    tmux -L neotui -f "$XDG_CONFIG_HOME/tmux/tmux.conf" new-session -d -s neotui -c "$PWD"
     tmux -L neotui set-environment -t neotui NEOTUI_ROOT "$ROOT_DIR"
+    tmux -L neotui set-environment -t neotui NEOTUI_CONFIG_HOME "$XDG_CONFIG_HOME"
     session_id="$(tmux -L neotui display-message -p -t neotui '#{session_id}')"
     session_id="$(printf '%s' "$session_id" | tr -cd 'A-Za-z0-9_-')"
     tmux -L neotui set-environment -t neotui NEOTUI_SESSION_ID "$session_id"
     "$ROOT_DIR/bin/neotui-watch-session" "neotui" "$session_id" >/dev/null 2>&1 &
-    tmux -L neotui split-window -t neotui:0 -hb -l 32 -c "$PWD" "lf -config '$ROOT_DIR/lf/lfrc'"
+    tmux -L neotui split-window -t neotui:0 -hb -l 32 -c "$PWD" "lf -config '$XDG_CONFIG_HOME/lf/lfrc'"
     tmux -L neotui select-pane -t neotui:0 -R
-    tmux -L neotui -f "$ROOT_DIR/tmux/tmux.conf" attach-session -t neotui
+    tmux -L neotui -f "$XDG_CONFIG_HOME/tmux/tmux.conf" attach-session -t neotui
     if ! tmux -L neotui has-session -t neotui 2>/dev/null; then
       "$ROOT_DIR/bin/neotui-clean-session" "$session_id"
     fi
@@ -204,10 +207,10 @@ case "$command_name" in
     exec zsh "$@"
     ;;
   nvim)
-    exec nvim "$@"
+    exec nvim -u "$XDG_CONFIG_HOME/nvim/init.lua" "$@"
     ;;
   lf)
-    exec lf -config "$ROOT_DIR/lf/lfrc" "$@"
+    exec lf -config "$XDG_CONFIG_HOME/lf/lfrc" "$@"
     ;;
   help|-h|--help)
     usage

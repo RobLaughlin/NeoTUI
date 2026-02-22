@@ -6,7 +6,7 @@ if [ -z "$ROOT_DIR" ]; then
   ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fi
 
-STATE_DIR="$ROOT_DIR/.local/state/lf"
+STATE_DIR="${XDG_STATE_HOME:-$ROOT_DIR/state}/lf"
 WIDTH_FILE="$STATE_DIR/sidebar-width"
 DEFAULT_WIDTH=32
 
@@ -44,5 +44,6 @@ fi
 
 sidebar_width="$(load_width)"
 cur_dir="$(tmux display-message -p '#{pane_current_path}')"
-tmux split-window -t "$current_window" -hb -l "$sidebar_width" -c "$cur_dir" "lf -config '$ROOT_DIR/lf/lfrc'"
+tmux split-window -t "$current_window" -hb -l "$sidebar_width" -c "$cur_dir" "lf -config '$CONFIG_DIR/lf/lfrc'"
 tmux select-pane -t "$current_window" -R
+CONFIG_DIR="${NEOTUI_CONFIG_HOME:-$ROOT_DIR/config}"

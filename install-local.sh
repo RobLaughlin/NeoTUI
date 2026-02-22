@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+INSTALL_ROOT="${NEOTUI_HOME:-$HOME/.local/share/neotui}"
 BIN_DIR="${XDG_BIN_HOME:-$HOME/.local/bin}"
 TARGET="$BIN_DIR/neotui"
 SOURCE="$ROOT_DIR/bin/neotui"
@@ -10,7 +11,7 @@ REQ_FILE="$ROOT_DIR/REQUIREMENTS.txt"
 NVIM_UPSTREAM_VERSION="0.11.6"
 LF_UPSTREAM_VERSION="r41"
 
-export PATH="$ROOT_DIR/.local/bin:$PATH"
+export PATH="$INSTALL_ROOT/bin:$PATH"
 
 declare -A REQUIRED_VERSIONS=()
 
@@ -119,24 +120,18 @@ install_with_pkg_manager() {
       ;;
   esac
 
+  if [ "$manager" = "none" ]; then
+    return 1
+  fi
+
   printf 'Installing %s via %s...\n' "$tool" "$manager"
   if [ "${EUID}" -eq 0 ]; then
     case "$manager" in
-      apt)
-        apt-get install -y "$pkg_name"
-        ;;
-      dnf)
-        dnf install -y "$pkg_name"
-        ;;
-      pacman)
-        pacman -Sy --noconfirm "$pkg_name"
-        ;;
-      zypper)
-        zypper --non-interactive install "$pkg_name"
-        ;;
-      *)
-        return 1
-        ;;
+      apt) apt-get install -y "$pkg_name" ;;
+      dnf) dnf install -y "$pkg_name" ;;
+      pacman) pacman -Sy --noconfirm "$pkg_name" ;;
+      zypper) zypper --non-interactive install "$pkg_name" ;;
+      *) return 1 ;;
     esac
     return 0
   fi
@@ -147,28 +142,17 @@ install_with_pkg_manager() {
   fi
 
   case "$manager" in
-    apt)
-      sudo apt-get install -y "$pkg_name"
-      ;;
-    dnf)
-      sudo dnf install -y "$pkg_name"
-      ;;
-    pacman)
-      sudo pacman -Sy --noconfirm "$pkg_name"
-      ;;
-    zypper)
-      sudo zypper --non-interactive install "$pkg_name"
-      ;;
-    *)
-      return 1
-      ;;
+    apt) sudo apt-get install -y "$pkg_name" ;;
+    dnf) sudo dnf install -y "$pkg_name" ;;
+    pacman) sudo pacman -Sy --noconfirm "$pkg_name" ;;
+    zypper) sudo zypper --non-interactive install "$pkg_name" ;;
+    *) return 1 ;;
   esac
 }
 
 download_file() {
   local url="$1"
   local output="$2"
-
   if command -v curl >/dev/null 2>&1; then
     curl -fsSL "$url" -o "$output"
   elif command -v wget >/dev/null 2>&1; then
@@ -185,22 +169,20 @@ install_nvim_upstream() {
     return 1
   fi
 
-  local archive
+  local archive url tools_dir bin_dir install_dir
   archive="$(mktemp)"
-  local url="https://github.com/neovim/neovim/releases/download/v${NVIM_UPSTREAM_VERSION}/nvim-linux-x86_64.tar.gz"
-  local tools_dir="$ROOT_DIR/.local/tools"
-  local bin_dir="$ROOT_DIR/.local/bin"
-  local install_dir="$tools_dir/nvim-linux-x86_64-${NVIM_UPSTREAM_VERSION}"
+  url="https://github.com/neovim/neovim/releases/download/v${NVIM_UPSTREAM_VERSION}/nvim-linux-x86_64.tar.gz"
+  tools_dir="$INSTALL_ROOT/tools"
+  bin_dir="$INSTALL_ROOT/bin"
+  install_dir="$tools_dir/nvim-linux-x86_64-${NVIM_UPSTREAM_VERSION}"
 
   mkdir -p "$tools_dir" "$bin_dir"
   printf 'Installing Neovim v%s from upstream...\n' "$NVIM_UPSTREAM_VERSION"
   download_file "$url" "$archive"
 
-  rm -rf "$install_dir"
-  rm -rf "$tools_dir/nvim-linux-x86_64"
+  rm -rf "$install_dir" "$tools_dir/nvim-linux-x86_64"
   tar -xzf "$archive" -C "$tools_dir"
   rm -f "$archive"
-
   mv "$tools_dir/nvim-linux-x86_64" "$install_dir"
   ln -sfn "$install_dir/bin/nvim" "$bin_dir/nvim"
 }
@@ -211,12 +193,12 @@ install_lf_upstream() {
     return 1
   fi
 
-  local archive
+  local archive url tools_dir bin_dir install_dir
   archive="$(mktemp)"
-  local url="https://github.com/gokcehan/lf/releases/download/${LF_UPSTREAM_VERSION}/lf-linux-amd64.tar.gz"
-  local tools_dir="$ROOT_DIR/.local/tools"
-  local bin_dir="$ROOT_DIR/.local/bin"
-  local install_dir="$tools_dir/lf-${LF_UPSTREAM_VERSION}"
+  url="https://github.com/gokcehan/lf/releases/download/${LF_UPSTREAM_VERSION}/lf-linux-amd64.tar.gz"
+  tools_dir="$INSTALL_ROOT/tools"
+  bin_dir="$INSTALL_ROOT/bin"
+  install_dir="$tools_dir/lf-${LF_UPSTREAM_VERSION}"
 
   mkdir -p "$tools_dir" "$bin_dir" "$install_dir"
   printf 'Installing lf %s from upstream...\n' "$LF_UPSTREAM_VERSION"
@@ -226,22 +208,19 @@ install_lf_upstream() {
   mkdir -p "$install_dir"
   tar -xzf "$archive" -C "$install_dir"
   rm -f "$archive"
-
   ln -sfn "$install_dir/lf" "$bin_dir/lf"
 }
 
 ensure_requirements() {
   local tools=(tmux zsh lf nvim)
-  local manager
+  local manager missing outdated unknown needs_install tool min actual
   manager="$(detect_pkg_manager)"
-
-  local missing=()
-  local outdated=()
-  local unknown=()
+  missing=()
+  outdated=()
+  unknown=()
 
   printf 'Checking minimum runtime requirements...\n'
   for tool in "${tools[@]}"; do
-    local min actual
     min="${REQUIRED_VERSIONS[$tool]:-}"
     if [ -z "$min" ]; then
       printf 'Error: missing minimum version for %s in %s\n' "$tool" "$REQ_FILE" >&2
@@ -272,15 +251,9 @@ ensure_requirements() {
   fi
 
   printf '\nMissing or unsupported tools detected.\n'
-  if [ "${#missing[@]}" -gt 0 ]; then
-    printf 'Missing: %s\n' "${missing[*]}"
-  fi
-  if [ "${#outdated[@]}" -gt 0 ]; then
-    printf 'Outdated: %s\n' "${outdated[*]}"
-  fi
-  if [ "${#unknown[@]}" -gt 0 ]; then
-    printf 'Unknown version: %s\n' "${unknown[*]}"
-  fi
+  [ "${#missing[@]}" -gt 0 ] && printf 'Missing: %s\n' "${missing[*]}"
+  [ "${#outdated[@]}" -gt 0 ] && printf 'Outdated: %s\n' "${outdated[*]}"
+  [ "${#unknown[@]}" -gt 0 ] && printf 'Unknown version: %s\n' "${unknown[*]}"
 
   printf 'Install or upgrade required tools now? [y/N]: '
   read -r response
@@ -289,39 +262,28 @@ ensure_requirements() {
     exit 1
   fi
 
-  local needs_install=("${missing[@]}" "${outdated[@]}" "${unknown[@]}")
+  needs_install=("${missing[@]}" "${outdated[@]}" "${unknown[@]}")
   for tool in "${needs_install[@]}"; do
-    if [ -z "$tool" ]; then
-      continue
-    fi
-
+    [ -z "$tool" ] && continue
     if [ "$tool" = "nvim" ]; then
-      if ! install_with_pkg_manager "$tool" "$manager"; then
-        printf 'Package-manager install failed for nvim, trying upstream build...\n'
-      fi
+      install_with_pkg_manager "$tool" "$manager" || printf 'Package-manager install failed for nvim, trying upstream build...\n'
       if ! actual="$(get_tool_version nvim)" || ! version_ge "$actual" "${REQUIRED_VERSIONS[nvim]}"; then
         install_nvim_upstream
       fi
       continue
     fi
-
     if [ "$tool" = "lf" ]; then
-      if ! install_with_pkg_manager "$tool" "$manager"; then
-        printf 'Package-manager install failed for lf, trying upstream build...\n'
-        install_lf_upstream
-      fi
+      install_with_pkg_manager "$tool" "$manager" || printf 'Package-manager install failed for lf, trying upstream build...\n'
       if ! actual="$(get_tool_version lf)" || ! version_ge "$actual" "${REQUIRED_VERSIONS[lf]}"; then
         install_lf_upstream
       fi
       continue
     fi
-
     install_with_pkg_manager "$tool" "$manager"
   done
 
   printf '\nRechecking runtime requirements...\n'
   for tool in "${tools[@]}"; do
-    local min actual
     min="${REQUIRED_VERSIONS[$tool]}"
     if ! actual="$(get_tool_version "$tool")"; then
       printf 'Error: %s is still missing after install.\n' "$tool" >&2
@@ -353,6 +315,62 @@ cleanup_legacy_link() {
   printf 'Removed legacy NeoTUI global symlink: %s -> %s\n' "$symlink_path" "$actual_target"
 }
 
+copy_runtime_script() {
+  local relative="$1"
+  local src="$ROOT_DIR/bin/$relative"
+  local dst="$INSTALL_ROOT/bin/$relative"
+  mkdir -p "$(dirname "$dst")"
+  cp "$src" "$dst"
+  chmod +x "$dst"
+}
+
+copy_config_with_prompt() {
+  local src="$1"
+  local dst="$2"
+  local label="$3"
+
+  mkdir -p "$(dirname "$dst")"
+
+  if [ ! -e "$dst" ]; then
+    cp "$src" "$dst"
+    printf 'Installed default config: %s\n' "$label"
+    return 0
+  fi
+
+  if cmp -s "$src" "$dst"; then
+    printf 'Config unchanged: %s\n' "$label"
+    return 0
+  fi
+
+  printf 'Config exists: %s\n' "$label"
+  printf 'Overwrite installed config with repo default? [y/N]: '
+  read -r overwrite
+  if [[ "$overwrite" =~ ^[Yy]$ ]]; then
+    cp "$src" "$dst"
+    printf 'Overwrote config: %s\n' "$label"
+  else
+    printf 'Kept installed config: %s\n' "$label"
+  fi
+}
+
+install_runtime_layout() {
+  mkdir -p "$INSTALL_ROOT/bin" "$INSTALL_ROOT/config" "$INSTALL_ROOT/data" "$INSTALL_ROOT/state" "$INSTALL_ROOT/cache" "$INSTALL_ROOT/tools"
+
+  copy_runtime_script "neotui"
+  copy_runtime_script "neotui-toggle-lf"
+  copy_runtime_script "neotui-clean-session"
+  copy_runtime_script "neotui-watch-session"
+
+  copy_config_with_prompt "$ROOT_DIR/tmux/tmux.conf" "$INSTALL_ROOT/config/tmux/tmux.conf" "tmux/tmux.conf"
+  copy_config_with_prompt "$ROOT_DIR/lf/lfrc" "$INSTALL_ROOT/config/lf/lfrc" "lf/lfrc"
+  copy_config_with_prompt "$ROOT_DIR/nvim/init.lua" "$INSTALL_ROOT/config/nvim/init.lua" "nvim/init.lua"
+  copy_config_with_prompt "$ROOT_DIR/shell/.zshrc" "$INSTALL_ROOT/config/shell/.zshrc" "shell/.zshrc"
+  copy_config_with_prompt "$ROOT_DIR/shell/env.zsh" "$INSTALL_ROOT/config/shell/env.zsh" "shell/env.zsh"
+  copy_config_with_prompt "$ROOT_DIR/shell/vi-mode.zsh" "$INSTALL_ROOT/config/shell/vi-mode.zsh" "shell/vi-mode.zsh"
+  copy_config_with_prompt "$ROOT_DIR/shell/hooks.zsh" "$INSTALL_ROOT/config/shell/hooks.zsh" "shell/hooks.zsh"
+  copy_config_with_prompt "$ROOT_DIR/shell/aliases.zsh" "$INSTALL_ROOT/config/shell/aliases.zsh" "shell/aliases.zsh"
+}
+
 if [ ! -f "$SOURCE" ]; then
   printf 'Error: missing launcher at %s\n' "$SOURCE" >&2
   exit 1
@@ -380,23 +398,22 @@ printf ' 10) Enabling lf undo/redo hotkeys: gu/gr (session-scoped)\n'
 printf ' 11) Deleted files are recoverable only in current neotui session\n'
 printf ' 12) Enabling zsh helper: lfsync (sync to lf directory)\n'
 
-mkdir -p "$BIN_DIR"
+printf 'Installing NeoTUI runtime home: %s\n' "$INSTALL_ROOT"
+install_runtime_layout
 
+mkdir -p "$BIN_DIR"
 if [ -e "$TARGET" ] || [ -L "$TARGET" ]; then
   rm -f "$TARGET"
 fi
+ln -s "$INSTALL_ROOT/bin/neotui" "$TARGET"
 
-ln -s "$SOURCE" "$TARGET"
-
-printf 'Installed neotui command: %s -> %s\n' "$TARGET" "$SOURCE"
+printf 'Installed neotui command: %s -> %s\n' "$TARGET" "$INSTALL_ROOT/bin/neotui"
+printf 'NeoTUI runtime configs are now sourced from %s/config\n' "$INSTALL_ROOT"
+printf 'See README.md for the NeoTUI runtime directory tree.\n'
 
 case ":$PATH:" in
-  *":$BIN_DIR:"*)
-    printf 'PATH already includes %s\n' "$BIN_DIR"
-    ;;
-  *)
-    printf 'Warning: %s is not in PATH. Add it to run neotui directly.\n' "$BIN_DIR"
-    ;;
+  *":$BIN_DIR:"*) printf 'PATH already includes %s\n' "$BIN_DIR" ;;
+  *) printf 'Warning: %s is not in PATH. Add it to run neotui directly.\n' "$BIN_DIR" ;;
 esac
 
 printf 'NeoTUI install complete.\n'
