@@ -53,7 +53,7 @@ Default setup applied at install time:
 - enables tmux `<prefix>+E` to toggle the lf sidebar
 - opens lf as a left sidebar by default on new `neotui` sessions
 - enables lf keybinds: `gh` (home), `gz` (toggle file preview), `gs` (sync to zsh dir)
-- enables lf queue flow: `yy`/`yY` (toggle copy/cut), `p`/`P` (execute), `yq` (status), `c` (clear)
+- enables lf queue flow: `yy`/`yY` (toggle copy/cut), `p`/`P` (execute; copy queue persists), `yq` (status), `c` (clear)
 - enables lf file-operation hotkeys: `md` (mkdir), `mf` (touch), `dd` (safe trash)
 - enables lf undo/redo hotkeys: `gu`/`gr` (session-scoped)
 - deleted files are recoverable only during the current NeoTUI tmux session
@@ -97,7 +97,7 @@ Lf defaults:
 - `gs` syncs lf to the current zsh pane directory (same tmux window)
 - `yy`/`yY` toggle queueing current item for copy/cut
 - queued marker in left indicator lane: `y` for copy, `Y` for cut
-- `p` executes queued copy items, `P` executes queued cut items
+- `p` executes queued copy items and keeps copy queue, `P` executes queued cut items and clears cut queue
 - `yq` shows queue status and `c` clears all queues
 - `md` creates a directory, `mf` creates a file
 - `dd` moves selected/current file or directory to NeoTUI trash with confirmation

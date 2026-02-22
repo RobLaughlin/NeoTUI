@@ -219,13 +219,7 @@ cmd execcopy &{{
 
     cp -a -- "$src" "$dest"
     printf '%s|%s\n' "$src" "$dest" >> "$manifest"
-
-    escaped_src="$(printf '%s' "$src" | sed "s/'/'\\''/g")"
-    escaped_pwd="$(printf '%s' "$PWD" | sed "s/'/'\\''/g")"
-    lf -remote "send $id :select '$escaped_src'; tag-toggle y; cd '$escaped_pwd'"
   done < "$copy_queue"
-
-  rm -f "$copy_queue"
 
   if [ -s "$manifest" ]; then
     printf 'copyexec|%s\n' "$manifest" >> "$undo_file"
