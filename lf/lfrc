@@ -3,6 +3,8 @@ set nopreview
 set ratios 1
 set drawbox true
 set icons false
+set watch true
+set period 2
 
 cmd togglepreview &{{
   if [ -f "$XDG_STATE_HOME/lf/preview-on-$id" ]; then

@@ -69,6 +69,7 @@ Default setup applied at install time:
 - enables tmux pane resize hotkeys (`<prefix>+H/J/K/L`)
 - enables tmux `<prefix>+E` to toggle the lf sidebar
 - opens lf as a left sidebar by default on new `neotui` sessions
+- enables lf auto-refresh on file create/delete changes (`watch` + `period 2` fallback)
 - enables lf keybinds: `gh` (home), `gz` (toggle file preview), `gs` (sync to zsh dir)
 - enables lf queue flow: `yy`/`yY` (toggle copy/cut), `p`/`P` (execute; copy queue persists), `yq` (status), `c` (clear)
 - enables lf file-operation hotkeys: `md` (mkdir), `mf` (touch), `dd` (safe trash)
@@ -108,6 +109,7 @@ Tmux defaults:
 
 Lf defaults:
 - lf opens by default as a left sidebar on new `neotui` sessions
+- lf auto-refreshes on file create/delete changes (`watch` + `period 2` fallback)
 - file preview is off by default
 - `gh` jumps to home directory
 - `gz` toggles file preview (off <-> `2:3` preview)

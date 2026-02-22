@@ -51,6 +51,7 @@ usage() {
   printf '\n'
   printf 'Installed lf defaults:\n'
   printf '  - opens by default as left sidebar on new neotui session\n'
+  printf '  - auto-refreshes on file create/delete changes (watch + 2s poll fallback)\n'
   printf '  - file preview is off by default\n'
   printf '  - gh: jump to home directory\n'
   printf '  - gz: toggle file preview (off <-> 2:3 preview)\n'
