@@ -422,6 +422,7 @@ install_runtime_layout() {
   copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/minimal.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/minimal.lua" "nvim/lua/neotui/minimal.lua"
   copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/ide/init.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/init.lua" "nvim/lua/neotui/ide/init.lua"
   copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/ide/options.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/options.lua" "nvim/lua/neotui/ide/options.lua"
+  copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/ide/explorer.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/explorer.lua" "nvim/lua/neotui/ide/explorer.lua"
   copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/ide/keymaps.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/keymaps.lua" "nvim/lua/neotui/ide/keymaps.lua"
   copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/ide/lazy.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/lazy.lua" "nvim/lua/neotui/ide/lazy.lua"
   copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/ide/plugins.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/plugins.lua" "nvim/lua/neotui/ide/plugins.lua"
@@ -437,7 +438,7 @@ prompt_nvim_ide_profile() {
   local ide_flag="$INSTALL_ROOT/state/nvim/ide-profile-enabled"
 
   mkdir -p "$(dirname "$ide_flag")"
-  printf 'Enable NeoTUI recommended nvim IDE profile (LSP, completion, treesitter, telescope, gitsigns, formatting/linting, codeium)? [Y/n]: '
+  printf 'Enable NeoTUI recommended nvim IDE profile (LSP, completion, telescope, gitsigns, formatting/linting, codeium)? [Y/n]: '
   read -r enable_ide
   if [[ "$enable_ide" =~ ^[Nn]$ ]]; then
     ENABLE_NVIM_IDE_PROFILE=0
@@ -447,6 +448,8 @@ prompt_nvim_ide_profile() {
     ENABLE_NVIM_IDE_PROFILE=1
     : > "$ide_flag"
     printf 'Enabled NeoTUI recommended nvim IDE profile.\n'
+    printf 'Run :Codeium Auth in nvim once to enable AI autocomplete.\n'
+    printf 'Neo-tree sticky explorer is enabled. Use <leader>e to toggle visibility across tabs.\n'
   fi
 }
 
@@ -491,8 +494,14 @@ print_applied_defaults() {
 
   printf '%bNvim%b\n' "$C_SECTION" "$C_RESET"
   printf '  - keybinds: %bCtrl+h%b (previous tab), %bCtrl+l%b (next tab)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
+  printf '  - keybinds: %bS-Tab%b (Codeium accept), %bC-y%b (Codeium accept fallback), %bC-g%b (Codeium accept line)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
+  printf '  - keybinds: %b<leader>e%b (toggle neo-tree), %bCtrl-w h/l%b (move explorer/editor), %bCtrl-w p%b (previous window)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
   printf '  - commands: %b:tabn%b / %b:tabp%b / %b:tabclose%b\n' "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET"
+  printf '  - behavior: neo-tree %bEnter%b opens file in new nvim tab and reveals it; tabline is always visible\n' "$C_KEYBIND" "$C_RESET"
   printf '  - profile: recommended IDE defaults are installer prompt controlled (default: enabled)\n'
+  printf '  - theme: catppuccin (mocha)\n'
+  printf '  - explorer: neo-tree sticky mode toggled with %b<leader>e%b; commands %b:NeoTUIExplorerEnable%b / %b:NeoTUIExplorerDisable%b / %b:NeoTUIExplorerToggle%b\n' "$C_KEYBIND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET"
+  printf '  - ai: run %b:Codeium Auth%b once in nvim to enable Codeium autocomplete\n' "$C_COMMAND" "$C_RESET"
   printf '\n'
 }
 

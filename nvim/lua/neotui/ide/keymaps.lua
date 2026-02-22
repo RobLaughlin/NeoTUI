@@ -25,6 +25,9 @@ function M.setup()
   vim.keymap.set("n", "<leader>fh", function()
     require("telescope.builtin").help_tags()
   end, { desc = "Help tags" })
+  vim.keymap.set("n", "<leader>e", function()
+    require("neotui.ide.explorer").toggle()
+  end, { desc = "Toggle Neo-tree explorer" })
 
   vim.api.nvim_create_autocmd("LspAttach", {
     callback = function(event)

@@ -15,6 +15,17 @@ local servers = {
 
 return {
   {
+    "catppuccin/nvim",
+    name = "catppuccin",
+    priority = 1000,
+    config = function()
+      require("catppuccin").setup({
+        flavour = "mocha",
+      })
+      vim.cmd.colorscheme("catppuccin")
+    end,
+  },
+  {
     "neovim/nvim-lspconfig",
     dependencies = {
       "saghen/blink.cmp",
@@ -73,31 +84,6 @@ return {
     event = "InsertEnter",
   },
   {
-    "nvim-treesitter/nvim-treesitter",
-    build = ":TSUpdate",
-    config = function()
-      local ok, treesitter = pcall(require, "nvim-treesitter")
-      if not ok then
-        return
-      end
-
-      treesitter.setup({
-        ensure_installed = {
-          "bash",
-          "json",
-          "lua",
-          "markdown",
-          "markdown_inline",
-          "toml",
-          "vim",
-          "yaml",
-        },
-        highlight = { enable = true },
-        indent = { enable = true },
-      })
-    end,
-  },
-  {
     "nvim-lua/plenary.nvim",
     lazy = true,
   },
@@ -105,6 +91,32 @@ return {
     "nvim-telescope/telescope.nvim",
     branch = "0.1.x",
     dependencies = { "nvim-lua/plenary.nvim" },
+  },
+  {
+    "nvim-neo-tree/neo-tree.nvim",
+    branch = "v3.x",
+    cmd = { "Neotree" },
+    dependencies = {
+      "nvim-lua/plenary.nvim",
+      "MunifTanjim/nui.nvim",
+      "nvim-tree/nvim-web-devicons",
+    },
+    opts = {
+      close_if_last_window = true,
+      filesystem = {
+        follow_current_file = {
+          enabled = true,
+        },
+      },
+      window = {
+        width = 32,
+        mappings = {
+          ["<cr>"] = function(state)
+            require("neotui.ide.explorer").open_in_tab_and_sync(state)
+          end,
+        },
+      },
+    },
   },
   {
     "lewis6991/gitsigns.nvim",
@@ -155,7 +167,42 @@ return {
       require("codeium").setup({
         enable_chat = false,
         enable_cmp_source = false,
+        virtual_text = {
+          enabled = true,
+          manual = false,
+          default_filetype_enabled = true,
+          map_keys = false,
+          accept_fallback = "",
+          key_bindings = {
+            accept = false,
+            accept_word = false,
+            accept_line = false,
+            clear = false,
+            next = false,
+            prev = false,
+          },
+        },
       })
+
+      local vt = require("codeium.virtual_text")
+      vim.keymap.set("i", "<S-Tab>", function()
+        return vt.accept()
+      end, { expr = true, silent = true, desc = "Codeium accept" })
+      vim.keymap.set("i", "<C-y>", function()
+        return vt.accept()
+      end, { expr = true, silent = true, desc = "Codeium accept" })
+      vim.keymap.set("i", "<C-g>", function()
+        return vt.accept_next_line()
+      end, { expr = true, silent = true, desc = "Codeium accept line" })
+      vim.keymap.set("i", "<M-]>", function()
+        vt.cycle_completions(1)
+      end, { silent = true, desc = "Codeium next" })
+      vim.keymap.set("i", "<M-[>", function()
+        vt.cycle_completions(-1)
+      end, { silent = true, desc = "Codeium prev" })
+      vim.keymap.set("i", "<C-x>", function()
+        vt.clear()
+      end, { silent = true, desc = "Codeium clear" })
     end,
   },
 }

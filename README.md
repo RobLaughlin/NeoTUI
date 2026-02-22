@@ -31,6 +31,14 @@ Runtime minimums are defined in `REQUIREMENTS.txt`:
 - `lf>=31`
 - `nvim>=0.11.0`
 
+## Quick install (curl)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/RobLaughlin/NeoTUI/main/install.sh | bash
+```
+
+This downloads the installer script, clones the NeoTUI repo, and runs `install-local.sh`.
+
 ## Local install
 
 ```bash
@@ -101,8 +109,23 @@ Default setup applied at install time:
 | Type | Value | Notes |
 | --- | --- | --- |
 | Feature | Recommended IDE profile prompt | Installer default is `Yes` |
-| Feature | IDE profile contents | lazy.nvim, built-in LSPs, blink.cmp, LuaSnip, treesitter, telescope, gitsigns, formatting/linting, codeium |
+| Feature | IDE profile contents | lazy.nvim, built-in LSPs, blink.cmp, LuaSnip, telescope, gitsigns, formatting/linting, codeium |
+| Feature | Theme | Catppuccin (`mocha`) |
 | Feature | `ripgrep` | Recommended for Telescope `live_grep` |
+| Command | `:Codeium Auth` | Run once to enable Codeium autocomplete |
+| Feature | Codeium inline ghost text | Enabled in insert mode, supports multiline suggestions |
+| Keybind | `Shift+Tab` | Accept Codeium ghost suggestion |
+| Keybind | `Ctrl+y` | Accept Codeium ghost suggestion fallback |
+| Keybind | `Ctrl+g` | Accept next Codeium suggestion line |
+| Feature | Tabline | Always visible, including single-tab sessions |
+| Feature | Neo-tree explorer plugin | Sticky across tabs when enabled |
+| Keybind | `<leader>e` | Toggle Neo-tree sticky visibility |
+| Keybind | `Ctrl-w h` / `Ctrl-w l` | Move between explorer and editor panes |
+| Keybind | `Ctrl-w p` | Jump to previous window |
+| Keybind | `Enter` in Neo-tree | Open file in a new nvim tab and reveal it in explorer |
+| Command | `:NeoTUIExplorerEnable` | Enable sticky Neo-tree visibility |
+| Command | `:NeoTUIExplorerDisable` | Disable sticky Neo-tree visibility |
+| Command | `:NeoTUIExplorerToggle` | Toggle sticky Neo-tree visibility |
 | Keybind | `Ctrl+h` | Previous tab |
 | Keybind | `Ctrl+l` | Next tab |
 | Command | `:tabn`, `:tabp`, `:tabclose` | Tab navigation and close |
@@ -171,8 +194,23 @@ Subcommands:
 | Type | Value | Notes |
 | --- | --- | --- |
 | Feature | Recommended IDE profile prompt | Installer default is `Yes` |
-| Feature | IDE profile contents | lazy.nvim, built-in LSPs, blink.cmp, LuaSnip, treesitter, telescope, gitsigns, formatting/linting, codeium |
+| Feature | IDE profile contents | lazy.nvim, built-in LSPs, blink.cmp, LuaSnip, telescope, gitsigns, formatting/linting, codeium |
+| Feature | Theme | Catppuccin (`mocha`) |
 | Feature | `ripgrep` | Recommended for Telescope `live_grep` |
+| Command | `:Codeium Auth` | Run once to enable Codeium autocomplete |
+| Feature | Codeium inline ghost text | Enabled in insert mode, supports multiline suggestions |
+| Keybind | `Shift+Tab` | Accept Codeium ghost suggestion |
+| Keybind | `Ctrl+y` | Accept Codeium ghost suggestion fallback |
+| Keybind | `Ctrl+g` | Accept next Codeium suggestion line |
+| Feature | Tabline | Always visible, including single-tab sessions |
+| Feature | Neo-tree explorer plugin | Sticky across tabs when enabled |
+| Keybind | `<leader>e` | Toggle Neo-tree sticky visibility |
+| Keybind | `Ctrl-w h` / `Ctrl-w l` | Move between explorer and editor panes |
+| Keybind | `Ctrl-w p` | Jump to previous window |
+| Keybind | `Enter` in Neo-tree | Open file in a new nvim tab and reveal it in explorer |
+| Command | `:NeoTUIExplorerEnable` | Enable sticky Neo-tree visibility |
+| Command | `:NeoTUIExplorerDisable` | Disable sticky Neo-tree visibility |
+| Command | `:NeoTUIExplorerToggle` | Toggle sticky Neo-tree visibility |
 | Keybind | `Ctrl+h` | Previous tab |
 | Keybind | `Ctrl+l` | Next tab |
 | Command | `:tabn`, `:tabp`, `:tabclose` | Tab navigation and close |

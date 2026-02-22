@@ -77,9 +77,15 @@ usage() {
   printf '\n'
   printf '%bNvim%b\n' "$C_SECTION" "$C_RESET"
   printf '  - keybinds: %bCtrl+h%b (previous tab), %bCtrl+l%b (next tab)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
+  printf '  - keybinds: %bS-Tab%b (Codeium accept), %bC-y%b (Codeium accept fallback), %bC-g%b (Codeium accept line)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
+  printf '  - keybinds: %b<leader>e%b (toggle neo-tree), %bCtrl-w h/l%b (move explorer/editor), %bCtrl-w p%b (previous window)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
   printf '  - commands: %b:tabn%b / %b:tabp%b / %b:tabclose%b\n' "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET"
+  printf '  - behavior: neo-tree %bEnter%b opens file in new nvim tab and reveals it; tabline is always visible\n' "$C_KEYBIND" "$C_RESET"
+  printf '  - theme: catppuccin (mocha)\n'
+  printf '  - explorer: neo-tree sticky mode toggled with %b<leader>e%b; commands %b:NeoTUIExplorerEnable%b / %b:NeoTUIExplorerDisable%b / %b:NeoTUIExplorerToggle%b\n' "$C_KEYBIND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET"
   printf '  - profile: installer-managed recommended IDE mode (default enabled)\n'
-  printf '  - IDE includes: lazy.nvim, built-in LSPs, blink.cmp, LuaSnip, treesitter, telescope, gitsigns, conform+nvim-lint, codeium\n'
+  printf '  - IDE includes: lazy.nvim, built-in LSPs, blink.cmp, LuaSnip, telescope, gitsigns, conform+nvim-lint, codeium\n'
+  printf '  - ai: run %b:Codeium Auth%b once in nvim to enable Codeium autocomplete\n' "$C_COMMAND" "$C_RESET"
 }
 
 print_tool_info() {
