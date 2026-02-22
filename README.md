@@ -70,7 +70,7 @@ Default setup applied at install time:
 - enables tmux `<prefix>+E` to toggle the lf sidebar
 - opens lf as a left sidebar by default on new `neotui` sessions
 - enables lf auto-refresh on file create/delete changes (`watch` + `period 2` fallback)
-- enables lf keybinds: `gh` (home), `gz` (toggle file preview), `gs` (sync to zsh dir)
+- enables lf keybinds: `gh` (home), `gz` (toggle file preview), `gs` (sync to zsh dir), `l`/`Enter` (enter dir; files open in split/new window)
 - enables lf queue flow: `yy`/`yY` (toggle copy/cut), `p`/`P` (execute; copy queue persists), `yq` (status), `c` (clear)
 - enables lf file-operation hotkeys: `md` (mkdir), `mf` (touch), `dd` (safe trash)
 - enables lf undo/redo hotkeys: `gu`/`gr` (session-scoped)
@@ -114,6 +114,8 @@ Lf defaults:
 - `gh` jumps to home directory
 - `gz` toggles file preview (off <-> `2:3` preview)
 - `gs` syncs lf to the current zsh pane directory (same tmux window)
+- `l` enters a directory, or opens a file in `nvim` in a new split pane (same tmux window)
+- `Enter` enters a directory, or opens a file in `nvim` in a new tmux window
 - `yy`/`yY` toggle queueing current item for copy/cut
 - queued marker in left indicator lane: `y` for copy, `Y` for cut
 - `p` executes queued copy items and keeps copy queue, `P` executes queued cut items and clears cut queue

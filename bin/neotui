@@ -56,6 +56,8 @@ usage() {
   printf '  - gh: jump to home directory\n'
   printf '  - gz: toggle file preview (off <-> 2:3 preview)\n'
   printf '  - gs: sync lf directory to zsh pane path (same window)\n'
+  printf '  - l: enter dir, or open file in nvim split pane (same window)\n'
+  printf '  - Enter: enter dir, or open file in nvim new tmux window\n'
   printf '  - yy/yY: toggle queue current item for copy/cut\n'
   printf '  - queued marker: y (copy), Y (cut)\n'
   printf '  - p/P: execute queued copy/cut items (copy queue keeps, cut queue clears)\n'
