@@ -395,10 +395,11 @@ printf '  7) Opening lf sidebar by default on new neotui session\n'
 printf '  8) Enabling lf auto-refresh for file create/delete updates (watch + 2s poll fallback)\n'
 printf '  9) Enabling lf keybinds: gh (home), gz (toggle file preview), gs (sync to zsh dir), l/Enter (enter dir; files open in nvim split/new window)\n'
 printf ' 10) Enabling nvim tab hotkeys: Ctrl+h (previous tab), Ctrl+l (next tab)\n'
-printf ' 11) Enabling lf queue flow: yy/yY (toggle copy/cut), p/P (execute; copy queue persists), yq (status), c (clear)\n'
-printf ' 12) Enabling lf undo/redo hotkeys: gu/gr (session-scoped)\n'
-printf ' 13) Deleted files are recoverable only in current neotui session\n'
-printf ' 14) Enabling zsh helper: lfsync (sync to lf directory)\n'
+printf ' 11) Disabling default lf mark keys: Space/v/u (copy/cut queues only)\n'
+printf ' 12) Enabling lf queue flow: yy/yY (toggle copy/cut), p/P (execute; copy queue persists), yq (status), c (clear)\n'
+printf ' 13) Enabling lf undo/redo hotkeys: gu/gr (session-scoped)\n'
+printf ' 14) Deleted files are recoverable only in current neotui session\n'
+printf ' 15) Enabling zsh helper: lfsync (sync to lf directory)\n'
 
 printf 'Installing NeoTUI runtime home: %s\n' "$INSTALL_ROOT"
 install_runtime_layout

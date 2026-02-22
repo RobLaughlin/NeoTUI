@@ -71,6 +71,7 @@ Default setup applied at install time:
 - opens lf as a left sidebar by default on new `neotui` sessions
 - enables lf auto-refresh on file create/delete changes (`watch` + `period 2` fallback)
 - enables lf keybinds: `gh` (home), `gz` (toggle file preview), `gs` (sync to zsh dir), `l`/`Enter` (enter dir; files open in nvim split/new window)
+- disables default lf mark keys (`Space`/`v`/`u`) so queue markers remain copy/cut-only
 - enables nvim tab hotkeys: `Ctrl+h` (previous tab), `Ctrl+l` (next tab)
 - enables lf queue flow: `yy`/`yY` (toggle copy/cut), `p`/`P` (execute; copy queue persists), `yq` (status), `c` (clear)
 - enables lf file-operation hotkeys: `md` (mkdir), `mf` (touch), `dd` (safe trash)
@@ -120,6 +121,7 @@ Lf defaults:
 - nvim tabs can be navigated with `gt`/`gT` (next/prev), `:tabn`/`:tabp`, and closed with `:tabclose`
 - `yy`/`yY` toggle queueing current item for copy/cut
 - queued marker in left indicator lane: `y` for copy, `Y` for cut
+- default lf mark keys are disabled: `Space`, `v`, `u`
 - `p` executes queued copy items and keeps copy queue, `P` executes queued cut items and clears cut queue
 - `yq` shows queue status and `c` clears all queues
 - `md` creates a directory, `mf` creates a file

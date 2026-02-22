@@ -70,7 +70,7 @@ cmd smartopenpane &{{
 
   target_dir="$(dirname -- "$f")"
   escaped_file="$(printf '%s' "$f" | sed "s/'/'\\''/g")"
-  new_pane="$(tmux split-window -P -F '#{pane_id}' -t "$target_pane" -v -c "$target_dir" "nvim -- '$escaped_file'" 2>/dev/null || true)"
+  new_pane="$(tmux split-window -d -P -F '#{pane_id}' -t "$target_pane" -v -c "$target_dir" "nvim -- '$escaped_file'" 2>/dev/null || true)"
   if [ -z "$new_pane" ]; then
     lf -remote "send $id echo 'Unable to split pane here'"
   fi
@@ -630,6 +630,9 @@ map d
 map m
 map y
 map t
+map <space>
+map v
+map u
 
 map yy queuecopy
 map yY queuecut
