@@ -53,6 +53,14 @@ usage() {
   printf '  - gh: jump to home directory\n'
   printf '  - gz: toggle file preview (off <-> 2:3 preview)\n'
   printf '  - gs: sync lf directory to zsh pane path (same window)\n'
+  printf '  - yy/yY: toggle queue current item for copy/cut\n'
+  printf '  - queued marker: c (copy), C (cut)\n'
+  printf '  - p/P: execute queued copy/cut items (queues clear after run)\n'
+  printf '  - yq: show queue status, c: clear all queues\n'
+  printf '  - md: create directory, mf: create file\n'
+  printf '  - dd: move to NeoTUI trash (confirmed)\n'
+  printf '  - gu/gr: undo/redo last create/paste/delete action\n'
+  printf '  - delete recovery is session-scoped (cleared when session ends)\n'
   printf '\n'
   printf 'Installed zsh defaults:\n'
   printf '  - lfsync: sync zsh cwd to lf pane path (same window)\n'
@@ -165,14 +173,32 @@ fi
 case "$command_name" in
   tmux)
     if tmux -L neotui has-session -t neotui 2>/dev/null; then
-      exec tmux -L neotui -f "$ROOT_DIR/tmux/tmux.conf" attach-session -t neotui
+      session_id="$(tmux -L neotui display-message -p -t neotui '#{session_id}')"
+      session_id="$(printf '%s' "$session_id" | tr -cd 'A-Za-z0-9_-')"
+      tmux -L neotui -f "$ROOT_DIR/tmux/tmux.conf" attach-session -t neotui
+      if ! tmux -L neotui has-session -t neotui 2>/dev/null; then
+        "$ROOT_DIR/bin/neotui-clean-session" "$session_id"
+      fi
+      exit 0
     fi
+
+    rm -rf -- "$XDG_STATE_HOME/lf/sessions"
+    mkdir -p "$XDG_STATE_HOME/lf/sessions"
+    rm -f -- "$XDG_DATA_HOME/lf/tags"
 
     tmux -L neotui -f "$ROOT_DIR/tmux/tmux.conf" new-session -d -s neotui -c "$PWD"
     tmux -L neotui set-environment -t neotui NEOTUI_ROOT "$ROOT_DIR"
+    session_id="$(tmux -L neotui display-message -p -t neotui '#{session_id}')"
+    session_id="$(printf '%s' "$session_id" | tr -cd 'A-Za-z0-9_-')"
+    tmux -L neotui set-environment -t neotui NEOTUI_SESSION_ID "$session_id"
+    "$ROOT_DIR/bin/neotui-watch-session" "neotui" "$session_id" >/dev/null 2>&1 &
     tmux -L neotui split-window -t neotui:0 -hb -l 32 -c "$PWD" "lf -config '$ROOT_DIR/lf/lfrc'"
     tmux -L neotui select-pane -t neotui:0 -R
-    exec tmux -L neotui -f "$ROOT_DIR/tmux/tmux.conf" attach-session -t neotui
+    tmux -L neotui -f "$ROOT_DIR/tmux/tmux.conf" attach-session -t neotui
+    if ! tmux -L neotui has-session -t neotui 2>/dev/null; then
+      "$ROOT_DIR/bin/neotui-clean-session" "$session_id"
+    fi
+    exit 0
     ;;
   zsh)
     exec zsh "$@"

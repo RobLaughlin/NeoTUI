@@ -53,6 +53,10 @@ Default setup applied at install time:
 - enables tmux `<prefix>+E` to toggle the lf sidebar
 - opens lf as a left sidebar by default on new `neotui` sessions
 - enables lf keybinds: `gh` (home), `gz` (toggle file preview), `gs` (sync to zsh dir)
+- enables lf queue flow: `yy`/`yY` (toggle copy/cut), `p`/`P` (execute), `yq` (status), `c` (clear)
+- enables lf file-operation hotkeys: `md` (mkdir), `mf` (touch), `dd` (safe trash)
+- enables lf undo/redo hotkeys: `gu`/`gr` (session-scoped)
+- deleted files are recoverable only during the current NeoTUI tmux session
 - enables zsh helper: `lfsync` (sync to lf directory)
 
 ## Usage
@@ -91,6 +95,14 @@ Lf defaults:
 - `gh` jumps to home directory
 - `gz` toggles file preview (off <-> `2:3` preview)
 - `gs` syncs lf to the current zsh pane directory (same tmux window)
+- `yy`/`yY` toggle queueing current item for copy/cut
+- queued marker in left indicator lane: `c` for copy, `C` for cut
+- `p` executes queued copy items, `P` executes queued cut items
+- `yq` shows queue status and `c` clears all queues
+- `md` creates a directory, `mf` creates a file
+- `dd` moves selected/current file or directory to NeoTUI trash with confirmation
+- `gu` undoes and `gr` redoes the last create, paste, or delete action
+- lf undo/redo and trash are scoped to the current NeoTUI tmux session
 
 Zsh defaults:
 - NeoTUI uses repo-scoped zsh config in `shell/`

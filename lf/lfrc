@@ -5,18 +5,12 @@ set drawbox true
 set icons false
 
 cmd togglepreview &{{
-  state_dir="$XDG_STATE_HOME/lf"
-  session_id="$(printf '%s' "$id" | tr -cd 'A-Za-z0-9_-')"
-  enabled_file="$state_dir/preview-enabled-$session_id"
-
-  mkdir -p "$state_dir"
-
-  if [ -f "$enabled_file" ]; then
-    rm -f "$enabled_file"
+  if [ -f "$XDG_STATE_HOME/lf/preview-on-$id" ]; then
+    rm -f "$XDG_STATE_HOME/lf/preview-on-$id"
     lf -remote "send $id :set nopreview"
     lf -remote "send $id :set ratios 1"
   else
-    : > "$enabled_file"
+    : > "$XDG_STATE_HOME/lf/preview-on-$id"
     lf -remote "send $id :set ratios 2:3"
     lf -remote "send $id :set preview"
   fi
@@ -29,9 +23,7 @@ cmd syncshell &{{
   fi
 
   window_id="$(tmux display-message -p '#{window_id}')"
-  target_pane="$({
-    tmux list-panes -t "$window_id" -F '#{pane_id} #{pane_current_command} #{pane_last}'
-  } | awk -v current="${TMUX_PANE:-}" '$2 == "zsh" && $1 != current { if ($3 == "1") { print $1; found=1; exit } if (first == "") first=$1 } END { if (!found && first != "") print first }')"
+  target_pane="$({ tmux list-panes -t "$window_id" -F '#{pane_id} #{pane_current_command} #{pane_last}'; } | awk -v current="${TMUX_PANE:-}" '$2 == "zsh" && $1 != current { if ($3 == "1") { print $1; found=1; exit } if (first == "") first=$1 } END { if (!found && first != "") print first }')"
 
   if [ -z "$target_pane" ]; then
     lf -remote "send $id echo 'No zsh pane found in this window'"
@@ -43,6 +35,538 @@ cmd syncshell &{{
   lf -remote "send $id :cd '$escaped_dir'"
   lf -remote "send $id echo 'lf -> $target_dir'"
 }}
+
+cmd queuecopy &{{
+  session_id="${NEOTUI_SESSION_ID:-}"
+  [ -z "$session_id" ] && session_id="$(tmux display-message -p '#{session_id}' 2>/dev/null || printf 'default')"
+  session_id="$(printf '%s' "$session_id" | tr -cd 'A-Za-z0-9_-')"
+  state_root="$XDG_STATE_HOME/lf/sessions/$session_id"
+  queue_file="$state_root/copy.queue"
+  cut_queue="$state_root/cut.queue"
+  item="$f"
+  escaped_item="$(printf '%s' "$item" | sed "s/'/'\\''/g")"
+  escaped_pwd="$(printf '%s' "$PWD" | sed "s/'/'\\''/g")"
+
+  mkdir -p "$state_root"
+  touch "$queue_file"
+
+  remove_line() {
+    target_file="$1"
+    value="$2"
+    [ -f "$target_file" ] || return 0
+    awk -v v="$value" '$0 != v { print $0 }' "$target_file" > "$target_file.tmp"
+    mv "$target_file.tmp" "$target_file"
+  }
+
+  in_copy=0
+  if [ -f "$queue_file" ] && awk -v v="$item" '$0 == v { found=1 } END { exit(found ? 0 : 1) }' "$queue_file"; then
+    in_copy=1
+  fi
+
+  if [ "$in_copy" -eq 1 ]; then
+    remove_line "$queue_file" "$item"
+    lf -remote "send $id :select '$escaped_item'; tag-toggle c; cd '$escaped_pwd'"
+    lf -remote "send $id echo 'Unqueued copy: $(basename "$item")'"
+    exit 0
+  fi
+
+  remove_line "$cut_queue" "$item"
+
+  printf '%s\n' "$item" >> "$queue_file"
+  lf -remote "send $id :select '$escaped_item'; tag c; cd '$escaped_pwd'"
+
+  lf -remote "send $id echo 'Queued for copy: $(basename "$item")'"
+}}
+
+cmd queuecut &{{
+  session_id="${NEOTUI_SESSION_ID:-}"
+  [ -z "$session_id" ] && session_id="$(tmux display-message -p '#{session_id}' 2>/dev/null || printf 'default')"
+  session_id="$(printf '%s' "$session_id" | tr -cd 'A-Za-z0-9_-')"
+  state_root="$XDG_STATE_HOME/lf/sessions/$session_id"
+  queue_file="$state_root/cut.queue"
+  copy_queue="$state_root/copy.queue"
+  item="$f"
+  escaped_item="$(printf '%s' "$item" | sed "s/'/'\\''/g")"
+  escaped_pwd="$(printf '%s' "$PWD" | sed "s/'/'\\''/g")"
+
+  mkdir -p "$state_root"
+  touch "$queue_file"
+
+  remove_line() {
+    target_file="$1"
+    value="$2"
+    [ -f "$target_file" ] || return 0
+    awk -v v="$value" '$0 != v { print $0 }' "$target_file" > "$target_file.tmp"
+    mv "$target_file.tmp" "$target_file"
+  }
+
+  in_cut=0
+  if [ -f "$queue_file" ] && awk -v v="$item" '$0 == v { found=1 } END { exit(found ? 0 : 1) }' "$queue_file"; then
+    in_cut=1
+  fi
+
+  if [ "$in_cut" -eq 1 ]; then
+    remove_line "$queue_file" "$item"
+    lf -remote "send $id :select '$escaped_item'; tag-toggle C; cd '$escaped_pwd'"
+    lf -remote "send $id echo 'Unqueued cut: $(basename "$item")'"
+    exit 0
+  fi
+
+  remove_line "$copy_queue" "$item"
+
+  printf '%s\n' "$item" >> "$queue_file"
+  lf -remote "send $id :select '$escaped_item'; tag C; cd '$escaped_pwd'"
+
+  lf -remote "send $id echo 'Queued for cut: $(basename "$item")'"
+}}
+
+cmd clearqueues &{{
+  session_id="${NEOTUI_SESSION_ID:-}"
+  [ -z "$session_id" ] && session_id="$(tmux display-message -p '#{session_id}' 2>/dev/null || printf 'default')"
+  session_id="$(printf '%s' "$session_id" | tr -cd 'A-Za-z0-9_-')"
+  state_root="$XDG_STATE_HOME/lf/sessions/$session_id"
+
+  clear_markers() {
+    queue_file="$1"
+    marker="$2"
+    escaped_pwd="$(printf '%s' "$PWD" | sed "s/'/'\\''/g")"
+    [ -f "$queue_file" ] || return 0
+    while IFS= read -r path; do
+      [ -z "$path" ] && continue
+      escaped_path="$(printf '%s' "$path" | sed "s/'/'\\''/g")"
+      lf -remote "send $id :select '$escaped_path'; tag-toggle $marker; cd '$escaped_pwd'"
+    done < "$queue_file"
+  }
+
+  clear_markers "$state_root/copy.queue" c
+  clear_markers "$state_root/cut.queue" C
+
+  rm -f "$state_root/copy.queue" "$state_root/cut.queue"
+  lf -remote "send $id echo 'Cleared copy/cut queues'"
+}}
+
+cmd queuestatus &{{
+  session_id="${NEOTUI_SESSION_ID:-}"
+  [ -z "$session_id" ] && session_id="$(tmux display-message -p '#{session_id}' 2>/dev/null || printf 'default')"
+  session_id="$(printf '%s' "$session_id" | tr -cd 'A-Za-z0-9_-')"
+  state_root="$XDG_STATE_HOME/lf/sessions/$session_id"
+  copy_count=0
+  cut_count=0
+
+  if [ -f "$state_root/copy.queue" ]; then
+    copy_count="$(awk 'NF{n++} END{print n+0}' "$state_root/copy.queue")"
+  fi
+  if [ -f "$state_root/cut.queue" ]; then
+    cut_count="$(awk 'NF{n++} END{print n+0}' "$state_root/cut.queue")"
+  fi
+
+  lf -remote "send $id echo 'queues: copy=$copy_count cut=$cut_count'"
+}}
+
+cmd execcopy &{{
+  session_id="${NEOTUI_SESSION_ID:-}"
+  [ -z "$session_id" ] && session_id="$(tmux display-message -p '#{session_id}' 2>/dev/null || printf 'default')"
+  session_id="$(printf '%s' "$session_id" | tr -cd 'A-Za-z0-9_-')"
+  state_root="$XDG_STATE_HOME/lf/sessions/$session_id"
+  copy_queue="$state_root/copy.queue"
+  undo_file="$state_root/undo.stack"
+  redo_file="$state_root/redo.stack"
+
+  if [ ! -s "$copy_queue" ]; then
+    lf -remote "send $id echo 'Copy queue is empty'"
+    exit 0
+  fi
+
+  mkdir -p "$state_root"
+  op_id="$(date +%s%N)"
+  manifest="$state_root/copyexec-$op_id.list"
+  : > "$manifest"
+
+  while IFS= read -r src; do
+    [ -z "$src" ] && continue
+    [ ! -e "$src" ] && continue
+
+    name="$(basename "$src")"
+    dest="$PWD/$name"
+    if [ -e "$dest" ]; then
+      n=1
+      while [ -e "$PWD/${name}.copy$n" ]; do
+        n=$((n + 1))
+      done
+      dest="$PWD/${name}.copy$n"
+    fi
+
+    cp -a -- "$src" "$dest"
+    printf '%s|%s\n' "$src" "$dest" >> "$manifest"
+
+    escaped_src="$(printf '%s' "$src" | sed "s/'/'\\''/g")"
+    escaped_pwd="$(printf '%s' "$PWD" | sed "s/'/'\\''/g")"
+    lf -remote "send $id :select '$escaped_src'; tag-toggle c; cd '$escaped_pwd'"
+  done < "$copy_queue"
+
+  rm -f "$copy_queue"
+
+  if [ -s "$manifest" ]; then
+    printf 'copyexec|%s\n' "$manifest" >> "$undo_file"
+    : > "$redo_file"
+    lf -remote "send $id reload"
+    lf -remote "send $id echo 'Executed copy queue'"
+  else
+    rm -f "$manifest"
+    lf -remote "send $id echo 'No valid copy items'"
+  fi
+}}
+
+cmd execcut &{{
+  session_id="${NEOTUI_SESSION_ID:-}"
+  [ -z "$session_id" ] && session_id="$(tmux display-message -p '#{session_id}' 2>/dev/null || printf 'default')"
+  session_id="$(printf '%s' "$session_id" | tr -cd 'A-Za-z0-9_-')"
+  state_root="$XDG_STATE_HOME/lf/sessions/$session_id"
+  cut_queue="$state_root/cut.queue"
+  undo_file="$state_root/undo.stack"
+  redo_file="$state_root/redo.stack"
+
+  if [ ! -s "$cut_queue" ]; then
+    lf -remote "send $id echo 'Cut queue is empty'"
+    exit 0
+  fi
+
+  mkdir -p "$state_root"
+  op_id="$(date +%s%N)"
+  manifest="$state_root/moveexec-$op_id.list"
+  : > "$manifest"
+
+  while IFS= read -r src; do
+    [ -z "$src" ] && continue
+    [ ! -e "$src" ] && continue
+
+    name="$(basename "$src")"
+    dest="$PWD/$name"
+    if [ "$src" = "$dest" ]; then
+      continue
+    fi
+    if [ -e "$dest" ]; then
+      n=1
+      while [ -e "$PWD/${name}.moved$n" ]; do
+        n=$((n + 1))
+      done
+      dest="$PWD/${name}.moved$n"
+    fi
+
+    escaped_src="$(printf '%s' "$src" | sed "s/'/'\\''/g")"
+    escaped_pwd="$(printf '%s' "$PWD" | sed "s/'/'\\''/g")"
+    lf -remote "send $id :select '$escaped_src'; tag-toggle C; cd '$escaped_pwd'"
+
+    mv -- "$src" "$dest"
+    printf '%s|%s\n' "$src" "$dest" >> "$manifest"
+  done < "$cut_queue"
+
+  rm -f "$cut_queue"
+
+  if [ -s "$manifest" ]; then
+    printf 'moveexec|%s\n' "$manifest" >> "$undo_file"
+    : > "$redo_file"
+    lf -remote "send $id reload"
+    lf -remote "send $id echo 'Executed cut queue'"
+  else
+    rm -f "$manifest"
+    lf -remote "send $id echo 'No valid cut items'"
+  fi
+}}
+
+cmd mkdir %{{
+  session_id="${NEOTUI_SESSION_ID:-}"
+  [ -z "$session_id" ] && session_id="$(tmux display-message -p '#{session_id}' 2>/dev/null || printf 'default')"
+  session_id="$(printf '%s' "$session_id" | tr -cd 'A-Za-z0-9_-')"
+  state_root="$XDG_STATE_HOME/lf/sessions/$session_id"
+  undo_file="$state_root/undo.stack"
+  redo_file="$state_root/redo.stack"
+
+  mkdir -p "$state_root"
+  printf "Directory name: "
+  read -r dir
+  [ -z "$dir" ] && exit 0
+
+  target="$PWD/$dir"
+  mkdir -p -- "$target"
+  printf 'mkdir|%s\n' "$target" >> "$undo_file"
+  : > "$redo_file"
+  lf -remote "send $id reload"
+}}
+
+cmd touch %{{
+  session_id="${NEOTUI_SESSION_ID:-}"
+  [ -z "$session_id" ] && session_id="$(tmux display-message -p '#{session_id}' 2>/dev/null || printf 'default')"
+  session_id="$(printf '%s' "$session_id" | tr -cd 'A-Za-z0-9_-')"
+  state_root="$XDG_STATE_HOME/lf/sessions/$session_id"
+  undo_file="$state_root/undo.stack"
+  redo_file="$state_root/redo.stack"
+
+  mkdir -p "$state_root"
+  printf "File name: "
+  read -r file
+  [ -z "$file" ] && exit 0
+
+  target="$PWD/$file"
+  touch -- "$target"
+  printf 'touch|%s\n' "$target" >> "$undo_file"
+  : > "$redo_file"
+  lf -remote "send $id reload"
+}}
+
+cmd trash %{{
+  session_id="${NEOTUI_SESSION_ID:-}"
+  [ -z "$session_id" ] && session_id="$(tmux display-message -p '#{session_id}' 2>/dev/null || printf 'default')"
+  session_id="$(printf '%s' "$session_id" | tr -cd 'A-Za-z0-9_-')"
+  state_root="$XDG_STATE_HOME/lf/sessions/$session_id"
+  undo_file="$state_root/undo.stack"
+  redo_file="$state_root/redo.stack"
+  trash_root="$state_root/trash"
+
+  mkdir -p "$state_root" "$trash_root"
+  printf "Remove %s? [y/N] " "$fx"
+  read -r ans
+  if [ "$ans" != "y" ] && [ "$ans" != "Y" ]; then
+    exit 0
+  fi
+
+  op_id="$(date +%s%N)"
+  op_dir="$trash_root/$op_id"
+  manifest="$state_root/trash-$op_id.list"
+  mkdir -p "$op_dir"
+  : > "$manifest"
+
+  i=0
+  printf '%s\n' "$fx" | while IFS= read -r path; do
+    [ -z "$path" ] && continue
+    [ ! -e "$path" ] && continue
+    i=$((i + 1))
+    base="$(basename "$path")"
+    trash_path="$op_dir/${i}-$base"
+    mv -- "$path" "$trash_path"
+    printf '%s|%s\n' "$trash_path" "$path" >> "$manifest"
+  done
+
+  if [ -s "$manifest" ]; then
+    printf 'trash|%s\n' "$manifest" >> "$undo_file"
+    : > "$redo_file"
+    lf -remote "send $id reload"
+    lf -remote "send $id echo 'Moved to session trash'"
+  else
+    rm -f "$manifest"
+    lf -remote "send $id echo 'Nothing removed'"
+  fi
+}}
+
+cmd undolast &{{
+  session_id="${NEOTUI_SESSION_ID:-}"
+  [ -z "$session_id" ] && session_id="$(tmux display-message -p '#{session_id}' 2>/dev/null || printf 'default')"
+  session_id="$(printf '%s' "$session_id" | tr -cd 'A-Za-z0-9_-')"
+  state_root="$XDG_STATE_HOME/lf/sessions/$session_id"
+  undo_file="$state_root/undo.stack"
+  redo_file="$state_root/redo.stack"
+
+  if [ ! -s "$undo_file" ]; then
+    lf -remote "send $id echo 'Nothing to undo'"
+    exit 0
+  fi
+
+  entry="$(tail -n 1 "$undo_file")"
+  sed '$d' "$undo_file" > "$undo_file.tmp" && mv "$undo_file.tmp" "$undo_file"
+
+  op_type="${entry%%|*}"
+  payload="${entry#*|}"
+
+  case "$op_type" in
+    touch|mkdir)
+      [ -e "$payload" ] && rm -rf -- "$payload"
+      printf '%s|%s\n' "$op_type" "$payload" >> "$redo_file"
+      lf -remote "send $id reload"
+      lf -remote "send $id echo 'Undo complete'"
+      ;;
+    copyexec)
+      redo_manifest="$state_root/redo-copyexec-$(date +%s%N).list"
+      : > "$redo_manifest"
+      if [ -f "$payload" ]; then
+        while IFS='|' read -r src dest; do
+          [ -z "$dest" ] && continue
+          if [ -e "$dest" ]; then
+            rm -rf -- "$dest"
+            printf '%s|%s\n' "$src" "$dest" >> "$redo_manifest"
+          fi
+        done < "$payload"
+      fi
+      printf 'copyexec|%s\n' "$redo_manifest" >> "$redo_file"
+      lf -remote "send $id reload"
+      lf -remote "send $id echo 'Undo copy complete'"
+      ;;
+    moveexec)
+      redo_manifest="$state_root/redo-moveexec-$(date +%s%N).list"
+      : > "$redo_manifest"
+      if [ -f "$payload" ]; then
+        while IFS='|' read -r src dest; do
+          [ -z "$dest" ] && continue
+          [ ! -e "$dest" ] && continue
+
+          restore_path="$src"
+          if [ -e "$restore_path" ]; then
+            restore_path="${src}.restored.$(date +%s)"
+          fi
+
+          mkdir -p "$(dirname "$restore_path")"
+          mv -- "$dest" "$restore_path"
+          printf '%s|%s\n' "$restore_path" "$dest" >> "$redo_manifest"
+        done < "$payload"
+      fi
+      printf 'moveexec|%s\n' "$redo_manifest" >> "$redo_file"
+      lf -remote "send $id reload"
+      lf -remote "send $id echo 'Undo cut complete'"
+      ;;
+    trash)
+      redo_manifest="$state_root/retrash-$(date +%s%N).list"
+      : > "$redo_manifest"
+      if [ -f "$payload" ]; then
+        while IFS='|' read -r trash_path original_path; do
+          [ -z "$trash_path" ] && continue
+          [ ! -e "$trash_path" ] && continue
+
+          restore_path="$original_path"
+          if [ -e "$restore_path" ]; then
+            restore_path="${original_path}.restored.$(date +%s)"
+          fi
+
+          mkdir -p "$(dirname "$restore_path")"
+          mv -- "$trash_path" "$restore_path"
+          printf '%s|%s\n' "$restore_path" "$trash_path" >> "$redo_manifest"
+        done < "$payload"
+      fi
+      printf 'retrash|%s\n' "$redo_manifest" >> "$redo_file"
+      lf -remote "send $id reload"
+      lf -remote "send $id echo 'Undo delete complete'"
+      ;;
+    *)
+      lf -remote "send $id echo 'Undo failed: unknown operation'"
+      ;;
+  esac
+}}
+
+cmd redolast &{{
+  session_id="${NEOTUI_SESSION_ID:-}"
+  [ -z "$session_id" ] && session_id="$(tmux display-message -p '#{session_id}' 2>/dev/null || printf 'default')"
+  session_id="$(printf '%s' "$session_id" | tr -cd 'A-Za-z0-9_-')"
+  state_root="$XDG_STATE_HOME/lf/sessions/$session_id"
+  undo_file="$state_root/undo.stack"
+  redo_file="$state_root/redo.stack"
+
+  if [ ! -s "$redo_file" ]; then
+    lf -remote "send $id echo 'Nothing to redo'"
+    exit 0
+  fi
+
+  entry="$(tail -n 1 "$redo_file")"
+  sed '$d' "$redo_file" > "$redo_file.tmp" && mv "$redo_file.tmp" "$redo_file"
+
+  op_type="${entry%%|*}"
+  payload="${entry#*|}"
+
+  case "$op_type" in
+    touch)
+      mkdir -p "$(dirname "$payload")"
+      touch -- "$payload"
+      printf 'touch|%s\n' "$payload" >> "$undo_file"
+      lf -remote "send $id reload"
+      lf -remote "send $id echo 'Redo create file complete'"
+      ;;
+    mkdir)
+      mkdir -p -- "$payload"
+      printf 'mkdir|%s\n' "$payload" >> "$undo_file"
+      lf -remote "send $id reload"
+      lf -remote "send $id echo 'Redo create directory complete'"
+      ;;
+    copyexec)
+      undo_manifest="$state_root/undo-copyexec-redo-$(date +%s%N).list"
+      : > "$undo_manifest"
+      if [ -f "$payload" ]; then
+        while IFS='|' read -r src dest; do
+          [ -z "$src" ] && continue
+          [ -z "$dest" ] && continue
+          [ ! -e "$src" ] && continue
+          [ -e "$dest" ] && continue
+
+          mkdir -p "$(dirname "$dest")"
+          cp -a -- "$src" "$dest"
+          printf '%s|%s\n' "$src" "$dest" >> "$undo_manifest"
+        done < "$payload"
+      fi
+      printf 'copyexec|%s\n' "$undo_manifest" >> "$undo_file"
+      lf -remote "send $id reload"
+      lf -remote "send $id echo 'Redo copy complete'"
+      ;;
+    moveexec)
+      undo_manifest="$state_root/undo-moveexec-redo-$(date +%s%N).list"
+      : > "$undo_manifest"
+      if [ -f "$payload" ]; then
+        while IFS='|' read -r src dest; do
+          [ -z "$src" ] && continue
+          [ -z "$dest" ] && continue
+          [ ! -e "$src" ] && continue
+
+          target="$dest"
+          if [ -e "$target" ]; then
+            target="${dest}.redo.$(date +%s)"
+          fi
+
+          mkdir -p "$(dirname "$target")"
+          mv -- "$src" "$target"
+          printf '%s|%s\n' "$src" "$target" >> "$undo_manifest"
+        done < "$payload"
+      fi
+      printf 'moveexec|%s\n' "$undo_manifest" >> "$undo_file"
+      lf -remote "send $id reload"
+      lf -remote "send $id echo 'Redo cut complete'"
+      ;;
+    retrash)
+      undo_manifest="$state_root/trash-redo-$(date +%s%N).list"
+      : > "$undo_manifest"
+      if [ -f "$payload" ]; then
+        while IFS='|' read -r restore_path trash_path; do
+          [ -z "$restore_path" ] && continue
+          [ -z "$trash_path" ] && continue
+          [ ! -e "$restore_path" ] && continue
+
+          mkdir -p "$(dirname "$trash_path")"
+          mv -- "$restore_path" "$trash_path"
+          printf '%s|%s\n' "$trash_path" "$restore_path" >> "$undo_manifest"
+        done < "$payload"
+      fi
+      printf 'trash|%s\n' "$undo_manifest" >> "$undo_file"
+      lf -remote "send $id reload"
+      lf -remote "send $id echo 'Redo delete complete'"
+      ;;
+    *)
+      lf -remote "send $id echo 'Redo failed: unknown operation'"
+      ;;
+  esac
+}}
+
+map d
+map m
+map y
+map t
+
+map yy queuecopy
+map yY queuecut
+map p execcopy
+map P execcut
+map yq queuestatus
+
+map c clearqueues
+
+map md mkdir
+map mf touch
+map dd trash
+map gu undolast
+map gr redolast
 
 map gh cd ~
 map gz togglepreview

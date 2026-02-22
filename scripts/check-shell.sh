@@ -16,6 +16,14 @@ if [ -f "bin/neotui-toggle-lf" ]; then
   shell_files+=("bin/neotui-toggle-lf")
 fi
 
+if [ -f "bin/neotui-clean-session" ]; then
+  shell_files+=("bin/neotui-clean-session")
+fi
+
+if [ -f "bin/neotui-watch-session" ]; then
+  shell_files+=("bin/neotui-watch-session")
+fi
+
 if [ -f ".husky/pre-commit" ]; then
   shell_files+=(".husky/pre-commit")
 fi

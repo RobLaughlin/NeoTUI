@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+session_name="${1:-neotui}"
+session_id="${2:-}"
+
+root_dir="${NEOTUI_ROOT:-}"
+if [ -z "$root_dir" ]; then
+  root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+fi
+
+while tmux -L neotui has-session -t "$session_name" >/dev/null 2>&1; do
+  sleep 2
+done
+
+if [ -n "$session_id" ]; then
+  "$root_dir/bin/neotui-clean-session" "$session_id"
+fi
