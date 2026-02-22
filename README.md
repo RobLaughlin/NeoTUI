@@ -78,6 +78,8 @@ Default setup applied at install time:
 - enables lf undo/redo hotkeys: `gu`/`gr` (session-scoped)
 - deleted files are recoverable only during the current NeoTUI tmux session
 - enables zsh helper: `lfsync` (sync to lf directory)
+- enables optional zsh plugins when installed: autosuggestions + syntax highlighting
+- installer asks whether to reset NeoTUI zsh history file (default: keep existing)
 
 ## Usage
 
@@ -133,6 +135,10 @@ Zsh defaults:
 - NeoTUI uses installed runtime zsh config in `~/.local/share/neotui/config/shell/`
 - prompt matches the previous main-branch NeoTUI style (`[HH:MM] ~/path (git-branch) >`)
 - `lfsync` changes zsh cwd to the lf pane directory (same tmux window)
+- zsh completion is enabled via `compinit`
+- autosuggestions and syntax highlighting are enabled when distro plugins are installed
+- zsh history is stored at `~/.local/share/neotui/state/zsh/history`
+- installer prompts to optionally reset NeoTUI history (default: no)
 
 Nvim defaults:
 - `Ctrl+h` switches to the previous nvim tab

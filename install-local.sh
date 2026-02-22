@@ -150,6 +150,26 @@ install_with_pkg_manager() {
   esac
 }
 
+install_optional_zsh_plugins() {
+  local manager="$1"
+  local plugin_packages=(zsh-autosuggestions zsh-syntax-highlighting)
+  local pkg
+
+  if [ "$manager" = "none" ]; then
+    printf 'Skipping optional zsh plugin install (no supported package manager found).\n'
+    return 0
+  fi
+
+  printf 'Installing optional zsh plugins (autosuggestions + syntax highlighting)...\n'
+  for pkg in "${plugin_packages[@]}"; do
+    if install_with_pkg_manager "$pkg" "$manager"; then
+      printf '  - installed optional package: %s\n' "$pkg"
+    else
+      printf '  - optional package unavailable: %s (continuing)\n' "$pkg"
+    fi
+  done
+}
+
 download_file() {
   local url="$1"
   local output="$2"
@@ -369,6 +389,20 @@ install_runtime_layout() {
   copy_config_with_prompt "$ROOT_DIR/shell/vi-mode.zsh" "$INSTALL_ROOT/config/shell/vi-mode.zsh" "shell/vi-mode.zsh"
   copy_config_with_prompt "$ROOT_DIR/shell/hooks.zsh" "$INSTALL_ROOT/config/shell/hooks.zsh" "shell/hooks.zsh"
   copy_config_with_prompt "$ROOT_DIR/shell/aliases.zsh" "$INSTALL_ROOT/config/shell/aliases.zsh" "shell/aliases.zsh"
+  copy_config_with_prompt "$ROOT_DIR/shell/plugins.zsh" "$INSTALL_ROOT/config/shell/plugins.zsh" "shell/plugins.zsh"
+}
+
+prompt_history_reset() {
+  local history_file="$INSTALL_ROOT/state/zsh/history"
+  mkdir -p "$(dirname "$history_file")"
+  printf 'Create a brand new NeoTUI history file at %s? [y/N]: ' "$history_file"
+  read -r reset_history
+  if [[ "$reset_history" =~ ^[Yy]$ ]]; then
+    : > "$history_file"
+    printf 'Created fresh NeoTUI history file.\n'
+  else
+    printf 'Keeping existing NeoTUI history file.\n'
+  fi
 }
 
 if [ ! -f "$SOURCE" ]; then
@@ -378,6 +412,8 @@ fi
 
 load_requirements
 ensure_requirements
+
+install_optional_zsh_plugins "$(detect_pkg_manager)"
 
 cleanup_legacy_link "$HOME/.tmux.conf" "$ROOT_DIR/tmux/tmux.conf"
 cleanup_legacy_link "$HOME/.zshrc" "$ROOT_DIR/shell/.zshrc"
@@ -400,9 +436,12 @@ printf ' 12) Enabling lf queue flow: yy/yY (toggle copy/cut), p/P (execute; copy
 printf ' 13) Enabling lf undo/redo hotkeys: gu/gr (session-scoped)\n'
 printf ' 14) Deleted files are recoverable only in current neotui session\n'
 printf ' 15) Enabling zsh helper: lfsync (sync to lf directory)\n'
+printf ' 16) Enabling optional zsh autosuggestions + syntax highlighting when installed\n'
+printf ' 17) Prompting to optionally reset NeoTUI zsh history file (default: no)\n'
 
 printf 'Installing NeoTUI runtime home: %s\n' "$INSTALL_ROOT"
 install_runtime_layout
+prompt_history_reset
 
 mkdir -p "$BIN_DIR"
 if [ -e "$TARGET" ] || [ -L "$TARGET" ]; then

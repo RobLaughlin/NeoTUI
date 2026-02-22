@@ -75,6 +75,8 @@ usage() {
   printf '\n'
   printf 'Installed zsh defaults:\n'
   printf '  - lfsync: sync zsh cwd to lf pane path (same window)\n'
+  printf '  - optional plugins: autosuggestions + syntax highlighting (when installed)\n'
+  printf '  - history file: %s (installer can reset it; default keeps existing)\n' "$HISTFILE"
 }
 
 print_tool_info() {
