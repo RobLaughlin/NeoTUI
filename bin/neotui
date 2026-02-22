@@ -33,50 +33,51 @@ export SHELL="$shell_path"
 
 mkdir -p "$XDG_CONFIG_HOME" "$XDG_DATA_HOME" "$XDG_STATE_HOME" "$XDG_CACHE_HOME" "$(dirname "$HISTFILE")"
 
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+  C_RESET=$'\033[0m'
+  C_SECTION=$'\033[1;36m'
+  C_KEYBIND=$'\033[1;33m'
+  C_COMMAND=$'\033[1;32m'
+  C_NOTE=$'\033[1;35m'
+else
+  C_RESET=""
+  C_SECTION=""
+  C_KEYBIND=""
+  C_COMMAND=""
+  C_NOTE=""
+fi
+
 usage() {
   printf 'Usage: neotui [--debug] [tmux|zsh|nvim|lf] [args...]\n'
   printf '\n'
-  printf 'Subcommands:\n'
-  printf '  tmux         Start NeoTUI tmux session (default)\n'
-  printf '  zsh          Start NeoTUI zsh\n'
-  printf '  nvim [args] Start NeoTUI neovim\n'
-  printf '  lf           Start NeoTUI lf\n'
+  printf '%bSubcommands%b\n' "$C_SECTION" "$C_RESET"
+  printf '  - %btmux%b (default): start NeoTUI tmux session\n' "$C_COMMAND" "$C_RESET"
+  printf '  - %bzsh%b: start NeoTUI zsh\n' "$C_COMMAND" "$C_RESET"
+  printf '  - %bnvim [args...]%b: start NeoTUI neovim\n' "$C_COMMAND" "$C_RESET"
+  printf '  - %blf%b: start NeoTUI lf\n' "$C_COMMAND" "$C_RESET"
   printf '\n'
-  printf 'Installed tmux defaults:\n'
-  printf '  - top status bar with tab navigation\n'
-  printf '  - pane navigation: <prefix> h/j/k/l\n'
-  printf '  - pane split: <prefix>+| and <prefix>+-\n'
-  printf '  - pane resize: <prefix>+H/J/K/L\n'
-  printf '  - lf toggle: <prefix>+E (open/close left sidebar)\n'
+  printf '%bTmux%b\n' "$C_SECTION" "$C_RESET"
+  printf '  - status: top bar with tab navigation\n'
+  printf '  - shell: zsh is the default shell inside NeoTUI tmux panes\n'
+  printf '  - keybinds: %b<prefix> h/j/k/l%b (move), %b<prefix>+|%b and %b<prefix>+-%b (split), %b<prefix>+H/J/K/L%b (resize)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
+  printf '  - keybind: %b<prefix>+E%b toggles lf sidebar\n' "$C_KEYBIND" "$C_RESET"
   printf '\n'
-  printf 'Installed lf defaults:\n'
-  printf '  - opens by default as left sidebar on new neotui session\n'
-  printf '  - auto-refreshes on file create/delete changes (watch + 2s poll fallback)\n'
-  printf '  - file preview is off by default\n'
-  printf '  - gh: jump to home directory\n'
-  printf '  - gz: toggle file preview (off <-> 2:3 preview)\n'
-  printf '  - gs: sync lf directory to zsh pane path (same window)\n'
-  printf '  - l: enter dir, or open file in nvim (reuse nvim pane via tab, else split)\n'
-  printf '  - Enter: enter dir, or open file in nvim new tmux window\n'
-  printf '  - nvim tabs: gt/gT (next/prev), :tabn/:tabp, :tabclose\n'
-  printf '  - yy/yY: toggle queue current item for copy/cut\n'
-  printf '  - queued marker: y (copy), Y (cut)\n'
-  printf '  - default lf mark keys are disabled (space/v/u)\n'
-  printf '  - p/P: execute queued copy/cut items (copy queue keeps, cut queue clears)\n'
-  printf '  - yq: show queue status, c: clear all queues\n'
-  printf '  - md: create directory, mf: create file\n'
-  printf '  - dd: move to NeoTUI trash (confirmed)\n'
-  printf '  - gu/gr: undo/redo last create/paste/delete action\n'
-  printf '  - delete recovery is session-scoped (cleared when session ends)\n'
+  printf '%bZsh%b\n' "$C_SECTION" "$C_RESET"
+  printf '  - command: %blfsync%b syncs zsh cwd to lf pane path (same window)\n' "$C_COMMAND" "$C_RESET"
+  printf '  - features: completion via compinit; autosuggestions + syntax highlighting when installed\n'
+  printf '  - history: %s (installer can reset it, default keeps existing)\n' "$HISTFILE"
   printf '\n'
-  printf 'Installed nvim defaults:\n'
-  printf '  - Ctrl+h: previous nvim tab\n'
-  printf '  - Ctrl+l: next nvim tab\n'
+  printf '%bLf%b\n' "$C_SECTION" "$C_RESET"
+  printf '  - behavior: opens by default as left sidebar; auto-refresh on create/delete changes\n'
+  printf '  - keybinds: %bgh%b (home), %bgz%b (preview), %bgs%b (sync to zsh dir)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
+  printf '  - keybinds: %bl%b (enter dir / open file in nvim pane), %bEnter%b (enter dir / open file in new tmux window)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
+  printf '  - keybinds: %byy/yY%b (queue copy/cut), %bp/P%b (execute queues), %byq%b (queue status), %bc%b (clear queues)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
+  printf '  - keybinds: %bmd%b (mkdir), %bmf%b (touch), %bdd%b (trash), %bgu/gr%b (undo/redo)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
+  printf '  - note: default lf mark keys are disabled (%bSpace/v/u%b)\n' "$C_NOTE" "$C_RESET"
   printf '\n'
-  printf 'Installed zsh defaults:\n'
-  printf '  - lfsync: sync zsh cwd to lf pane path (same window)\n'
-  printf '  - optional plugins: autosuggestions + syntax highlighting (when installed)\n'
-  printf '  - history file: %s (installer can reset it; default keeps existing)\n' "$HISTFILE"
+  printf '%bNvim%b\n' "$C_SECTION" "$C_RESET"
+  printf '  - keybinds: %bCtrl+h%b (previous tab), %bCtrl+l%b (next tab)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
+  printf '  - commands: %b:tabn%b / %b:tabp%b / %b:tabclose%b\n' "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET"
 }
 
 print_tool_info() {

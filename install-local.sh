@@ -15,6 +15,20 @@ export PATH="$INSTALL_ROOT/bin:$PATH"
 
 declare -A REQUIRED_VERSIONS=()
 
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+  C_RESET=$'\033[0m'
+  C_SECTION=$'\033[1;36m'
+  C_KEYBIND=$'\033[1;33m'
+  C_COMMAND=$'\033[1;32m'
+  C_NOTE=$'\033[1;35m'
+else
+  C_RESET=""
+  C_SECTION=""
+  C_KEYBIND=""
+  C_COMMAND=""
+  C_NOTE=""
+fi
+
 trim() {
   local value="$1"
   value="${value#"${value%%[![:space:]]*}"}"
@@ -405,6 +419,38 @@ prompt_history_reset() {
   fi
 }
 
+print_applied_defaults() {
+  printf 'Applying NeoTUI defaults...\n'
+  printf '\n'
+
+  printf '%bTmux%b\n' "$C_SECTION" "$C_RESET"
+  printf '  - status: top bar with tab navigation\n'
+  printf '  - shell: zsh is the default shell inside NeoTUI tmux panes\n'
+  printf '  - keybinds: %b<prefix> h/j/k/l%b (move), %b<prefix>+|%b and %b<prefix>+-%b (split), %b<prefix>+H/J/K/L%b (resize)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
+  printf '  - keybind: %b<prefix>+E%b toggles lf sidebar\n' "$C_KEYBIND" "$C_RESET"
+  printf '\n'
+
+  printf '%bZsh%b\n' "$C_SECTION" "$C_RESET"
+  printf '  - command: %blfsync%b syncs zsh cwd to lf pane path (same window)\n' "$C_COMMAND" "$C_RESET"
+  printf '  - features: completion via compinit; autosuggestions + syntax highlighting when installed\n'
+  printf '  - history: %s (installer prompts to reset, default: no)\n' "$INSTALL_ROOT/state/zsh/history"
+  printf '\n'
+
+  printf '%bLf%b\n' "$C_SECTION" "$C_RESET"
+  printf '  - behavior: opens by default as left sidebar; auto-refresh on create/delete changes\n'
+  printf '  - keybinds: %bgh%b (home), %bgz%b (preview), %bgs%b (sync to zsh dir)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
+  printf '  - keybinds: %bl%b (enter dir / open in nvim), %bEnter%b (enter dir / open in new tmux window)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
+  printf '  - keybinds: %byy/yY%b (queue copy/cut), %bp/P%b (execute queues), %byq%b (queue status), %bc%b (clear queues)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
+  printf '  - keybinds: %bmd%b (mkdir), %bmf%b (touch), %bdd%b (trash), %bgu/gr%b (undo/redo)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
+  printf '  - note: default lf mark keys are disabled (%bSpace/v/u%b)\n' "$C_NOTE" "$C_RESET"
+  printf '\n'
+
+  printf '%bNvim%b\n' "$C_SECTION" "$C_RESET"
+  printf '  - keybinds: %bCtrl+h%b (previous tab), %bCtrl+l%b (next tab)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
+  printf '  - commands: %b:tabn%b / %b:tabp%b / %b:tabclose%b\n' "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET"
+  printf '\n'
+}
+
 if [ ! -f "$SOURCE" ]; then
   printf 'Error: missing launcher at %s\n' "$SOURCE" >&2
   exit 1
@@ -420,24 +466,7 @@ cleanup_legacy_link "$HOME/.zshrc" "$ROOT_DIR/shell/.zshrc"
 cleanup_legacy_link "$HOME/.config/nvim/init.lua" "$ROOT_DIR/nvim/init.lua"
 cleanup_legacy_link "$HOME/.config/nvim" "$ROOT_DIR/nvim"
 
-printf 'Applying NeoTUI defaults...\n'
-printf '  1) Enabling tmux status bar (top tab navigation)\n'
-printf '  2) Setting zsh as the default shell inside NeoTUI tmux\n'
-printf '  3) Enabling tmux pane navigation hotkeys (<prefix> h/j/k/l)\n'
-printf '  4) Enabling tmux pane split hotkeys (<prefix>+| and <prefix>+-)\n'
-printf '  5) Enabling tmux pane resize hotkeys (<prefix>+H/J/K/L)\n'
-printf '  6) Enabling tmux <prefix>+E to toggle lf sidebar\n'
-printf '  7) Opening lf sidebar by default on new neotui session\n'
-printf '  8) Enabling lf auto-refresh for file create/delete updates (watch + 2s poll fallback)\n'
-printf '  9) Enabling lf keybinds: gh (home), gz (toggle file preview), gs (sync to zsh dir), l/Enter (enter dir; files open in nvim split/new window)\n'
-printf ' 10) Enabling nvim tab hotkeys: Ctrl+h (previous tab), Ctrl+l (next tab)\n'
-printf ' 11) Disabling default lf mark keys: Space/v/u (copy/cut queues only)\n'
-printf ' 12) Enabling lf queue flow: yy/yY (toggle copy/cut), p/P (execute; copy queue persists), yq (status), c (clear)\n'
-printf ' 13) Enabling lf undo/redo hotkeys: gu/gr (session-scoped)\n'
-printf ' 14) Deleted files are recoverable only in current neotui session\n'
-printf ' 15) Enabling zsh helper: lfsync (sync to lf directory)\n'
-printf ' 16) Enabling optional zsh autosuggestions + syntax highlighting when installed\n'
-printf ' 17) Prompting to optionally reset NeoTUI zsh history file (default: no)\n'
+print_applied_defaults
 
 printf 'Installing NeoTUI runtime home: %s\n' "$INSTALL_ROOT"
 install_runtime_layout

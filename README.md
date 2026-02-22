@@ -62,24 +62,47 @@ Installer behavior:
 - prints applied NeoTUI defaults during install so users know what is being enabled
 
 Default setup applied at install time:
-- enables tmux top status bar with tab navigation
-- sets zsh as the default shell inside NeoTUI tmux panes
-- enables tmux pane navigation hotkeys (`<prefix> h/j/k/l`)
-- enables tmux pane split hotkeys (`<prefix>+|` and `<prefix>+-`)
-- enables tmux pane resize hotkeys (`<prefix>+H/J/K/L`)
-- enables tmux `<prefix>+E` to toggle the lf sidebar
-- opens lf as a left sidebar by default on new `neotui` sessions
-- enables lf auto-refresh on file create/delete changes (`watch` + `period 2` fallback)
-- enables lf keybinds: `gh` (home), `gz` (toggle file preview), `gs` (sync to zsh dir), `l`/`Enter` (enter dir; files open in nvim split/new window)
-- disables default lf mark keys (`Space`/`v`/`u`) so queue markers remain copy/cut-only
-- enables nvim tab hotkeys: `Ctrl+h` (previous tab), `Ctrl+l` (next tab)
-- enables lf queue flow: `yy`/`yY` (toggle copy/cut), `p`/`P` (execute; copy queue persists), `yq` (status), `c` (clear)
-- enables lf file-operation hotkeys: `md` (mkdir), `mf` (touch), `dd` (safe trash)
-- enables lf undo/redo hotkeys: `gu`/`gr` (session-scoped)
-- deleted files are recoverable only during the current NeoTUI tmux session
-- enables zsh helper: `lfsync` (sync to lf directory)
-- enables optional zsh plugins when installed: autosuggestions + syntax highlighting
-- installer asks whether to reset NeoTUI zsh history file (default: keep existing)
+
+### Tmux
+
+| Type | Value | Notes |
+| --- | --- | --- |
+| Feature | Top status bar with tab navigation | Enabled by default |
+| Feature | zsh default shell in tmux panes | NeoTUI sessions |
+| Keybind | `<prefix> h/j/k/l` | Pane navigation |
+| Keybind | `<prefix>+|`, `<prefix>+-` | Pane split |
+| Keybind | `<prefix>+H/J/K/L` | Pane resize |
+| Keybind | `<prefix>+E` | Toggle lf sidebar |
+
+### Zsh
+
+| Type | Value | Notes |
+| --- | --- | --- |
+| Command | `lfsync` | Sync zsh cwd to lf pane path |
+| Feature | `compinit` completion | Enabled by default |
+| Feature | Autosuggestions + syntax highlighting | Enabled when plugins are installed |
+| Feature | History reset prompt during install | Default answer is `No` |
+
+### Lf
+
+| Type | Value | Notes |
+| --- | --- | --- |
+| Feature | Left sidebar on new `neotui` session | Enabled by default |
+| Feature | Auto-refresh (`watch` + `period 2`) | Create/delete updates |
+| Keybind | `gh`, `gz`, `gs` | Home, preview toggle, sync to zsh dir |
+| Keybind | `l`, `Enter` | Enter dir; file opens in nvim pane/new tmux window |
+| Keybind | `yy`/`yY`, `p`/`P`, `yq`, `c` | Queue copy/cut flow |
+| Keybind | `md`, `mf`, `dd`, `gu`/`gr` | File ops and undo/redo |
+| Feature | `Space`/`v`/`u` mark keys disabled | Queue markers stay copy/cut-only |
+| Feature | Delete recovery scope | Current NeoTUI tmux session only |
+
+### Nvim
+
+| Type | Value | Notes |
+| --- | --- | --- |
+| Keybind | `Ctrl+h` | Previous tab |
+| Keybind | `Ctrl+l` | Next tab |
+| Command | `:tabn`, `:tabp`, `:tabclose` | Tab navigation and close |
 
 ## Usage
 
@@ -102,47 +125,51 @@ Subcommands:
 - `neotui nvim [args...]`
 - `neotui lf`
 
-Tmux defaults:
-- top status bar with tab-style window list
-- use `Shift+Left` / `Shift+Right` (or `Alt+Left` / `Alt+Right`) to switch tabs
-- zsh is the default shell inside NeoTUI tmux panes
-- pane navigation with `<prefix> h/j/k/l`
-- pane splitting with `<prefix>+|` and `<prefix>+-`
-- pane resizing with `<prefix>+H/J/K/L`
-- lf sidebar toggle with `<prefix>+E`
+### Tmux defaults
 
-Lf defaults:
-- lf opens by default as a left sidebar on new `neotui` sessions
-- lf auto-refreshes on file create/delete changes (`watch` + `period 2` fallback)
-- file preview is off by default
-- `gh` jumps to home directory
-- `gz` toggles file preview (off <-> `2:3` preview)
-- `gs` syncs lf to the current zsh pane directory (same tmux window)
-- `l` enters a directory, or opens a file in `nvim` in the same window (reuses existing `nvim` pane with `:tabedit`, otherwise creates a new split)
-- `Enter` enters a directory, or opens a file in `nvim` in a new tmux window
-- nvim tabs can be navigated with `gt`/`gT` (next/prev), `:tabn`/`:tabp`, and closed with `:tabclose`
-- `yy`/`yY` toggle queueing current item for copy/cut
-- queued marker in left indicator lane: `y` for copy, `Y` for cut
-- default lf mark keys are disabled: `Space`, `v`, `u`
-- `p` executes queued copy items and keeps copy queue, `P` executes queued cut items and clears cut queue
-- `yq` shows queue status and `c` clears all queues
-- `md` creates a directory, `mf` creates a file
-- `dd` moves selected/current file or directory to NeoTUI trash with confirmation
-- `gu` undoes and `gr` redoes the last create, paste, or delete action
-- lf undo/redo and trash are scoped to the current NeoTUI tmux session
+| Type | Value | Notes |
+| --- | --- | --- |
+| Feature | Top status bar with tab-style window list | Enabled by default |
+| Feature | zsh default shell in tmux panes | NeoTUI sessions |
+| Keybind | `<prefix> h/j/k/l` | Pane navigation |
+| Keybind | `<prefix>+|`, `<prefix>+-` | Pane split |
+| Keybind | `<prefix>+H/J/K/L` | Pane resize |
+| Keybind | `<prefix>+E` | Toggle lf sidebar |
 
-Zsh defaults:
-- NeoTUI uses installed runtime zsh config in `~/.local/share/neotui/config/shell/`
-- prompt matches the previous main-branch NeoTUI style (`[HH:MM] ~/path (git-branch) >`)
-- `lfsync` changes zsh cwd to the lf pane directory (same tmux window)
-- zsh completion is enabled via `compinit`
-- autosuggestions and syntax highlighting are enabled when distro plugins are installed
-- zsh history is stored at `~/.local/share/neotui/state/zsh/history`
-- installer prompts to optionally reset NeoTUI history (default: no)
+### Zsh defaults
 
-Nvim defaults:
-- `Ctrl+h` switches to the previous nvim tab
-- `Ctrl+l` switches to the next nvim tab
+| Type | Value | Notes |
+| --- | --- | --- |
+| Feature | Runtime config path | `~/.local/share/neotui/config/shell/` |
+| Feature | Prompt style | `[HH:MM] ~/path (git-branch) >` |
+| Command | `lfsync` | Sync zsh cwd to lf pane path |
+| Feature | `compinit` completion | Enabled by default |
+| Feature | Autosuggestions + syntax highlighting | Enabled when plugins are installed |
+| Feature | History file | `~/.local/share/neotui/state/zsh/history` |
+| Feature | History reset prompt | Installer default is `No` |
+
+### Lf defaults
+
+| Type | Value | Notes |
+| --- | --- | --- |
+| Feature | Left sidebar on new `neotui` session | Enabled by default |
+| Feature | Auto-refresh (`watch` + `period 2`) | Create/delete updates |
+| Feature | File preview | Off by default (`gz` toggles) |
+| Keybind | `gh`, `gz`, `gs` | Home, preview toggle, sync to zsh dir |
+| Keybind | `l`, `Enter` | Enter dir; open files in nvim pane/new tmux window |
+| Keybind | `yy`/`yY`, `p`/`P`, `yq`, `c` | Queue copy/cut flow |
+| Keybind | `md`, `mf`, `dd`, `gu`/`gr` | File ops and undo/redo |
+| Feature | Queue marker lane | `y` for copy, `Y` for cut |
+| Feature | Default mark keys disabled | `Space`, `v`, `u` |
+| Feature | Undo/redo + trash scope | Current NeoTUI tmux session only |
+
+### Nvim defaults
+
+| Type | Value | Notes |
+| --- | --- | --- |
+| Keybind | `Ctrl+h` | Previous tab |
+| Keybind | `Ctrl+l` | Next tab |
+| Command | `:tabn`, `:tabp`, `:tabclose` | Tab navigation and close |
 
 ## Development checks
 
