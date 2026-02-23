@@ -13,6 +13,24 @@ local servers = {
   yamlls = {},
 }
 
+local state_root = vim.env.XDG_STATE_HOME or vim.fn.stdpath("state")
+local format_on_save_disabled_flag = state_root .. "/nvim/format-on-save-disabled"
+local format_on_save_enabled = vim.fn.filereadable(format_on_save_disabled_flag) ~= 1
+
+local function python_mason_ready()
+  if vim.fn.executable("python3") ~= 1 then
+    return false
+  end
+
+  vim.fn.system({ "python3", "-m", "ensurepip", "--version" })
+  if vim.v.shell_error == 0 then
+    return true
+  end
+
+  vim.fn.system({ "python3", "-m", "pip", "--version" })
+  return vim.v.shell_error == 0
+end
+
 return {
   {
     "catppuccin/nvim",
@@ -41,12 +59,21 @@ return {
       })
 
       require("mason-tool-installer").setup({
-        ensure_installed = {
-          "stylua",
-          "shfmt",
-          "shellcheck",
-          "prettier",
-        },
+        ensure_installed = (function()
+          local tools = {
+            "stylua",
+            "shfmt",
+            "shellcheck",
+            "prettier",
+          }
+
+          if python_mason_ready() then
+            tools[#tools + 1] = "black"
+            tools[#tools + 1] = "ruff"
+          end
+
+          return tools
+        end)(),
         auto_update = false,
         run_on_start = true,
       })
@@ -127,18 +154,37 @@ return {
     opts = {
       formatters_by_ft = {
         bash = { "shfmt" },
+        css = { "prettier" },
+        go = { "gofmt" },
+        html = { "prettier" },
+        javascript = { "prettier" },
+        javascriptreact = { "prettier" },
         json = { "prettier" },
+        jsonc = { "prettier" },
         lua = { "stylua" },
         markdown = { "prettier" },
+        python = { "ruff_format", "black" },
+        rust = { "rustfmt" },
+        scss = { "prettier" },
         sh = { "shfmt" },
         toml = { "taplo" },
+        typescript = { "prettier" },
+        typescriptreact = { "prettier" },
         yaml = { "prettier" },
         zsh = { "shfmt" },
       },
-      format_on_save = {
-        timeout_ms = 1000,
-        lsp_fallback = true,
-      },
+      format_on_save = format_on_save_enabled and function(bufnr)
+        local conform = require("conform")
+        local formatters, lsp_available = conform.list_formatters_to_run(bufnr)
+        if #formatters == 0 and not lsp_available then
+          return nil
+        end
+
+        return {
+          timeout_ms = 1000,
+          lsp_fallback = true,
+        }
+      end or nil,
     },
   },
   {

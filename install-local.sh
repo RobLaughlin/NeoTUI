@@ -15,6 +15,10 @@ export PATH="$INSTALL_ROOT/bin:$PATH"
 
 declare -A REQUIRED_VERSIONS=()
 ENABLE_NVIM_IDE_PROFILE=1
+ENABLE_NVIM_FORMAT_ON_SAVE=1
+PYTHON_FORMATTER_PREREQS_OK=1
+RUST_FORMATTER_PREREQS_OK=1
+GO_FORMATTER_PREREQS_OK=1
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   C_RESET=$'\033[0m'
@@ -35,6 +39,34 @@ trim() {
   value="${value#"${value%%[![:space:]]*}"}"
   value="${value%"${value##*[![:space:]]}"}"
   printf '%s' "$value"
+}
+
+prompt_yes_no() {
+  local prompt="$1"
+  local default_answer="$2"
+  local response=""
+
+  printf '%s' "$prompt"
+
+  if [ -r /dev/tty ]; then
+    if ! read -r response </dev/tty; then
+      response=""
+    fi
+  fi
+
+  if [ -z "$response" ]; then
+    [ "$default_answer" = "y" ]
+    return
+  fi
+
+  case "$response" in
+    [Yy]*) return 0 ;;
+    [Nn]*) return 1 ;;
+    *)
+      [ "$default_answer" = "y" ]
+      return
+      ;;
+  esac
 }
 
 load_requirements() {
@@ -133,6 +165,31 @@ install_with_pkg_manager() {
     nvim)
       pkg_name="neovim"
       ;;
+    python3)
+      if [ "$manager" = "pacman" ]; then
+        pkg_name="python"
+      fi
+      ;;
+    python3-pip)
+      if [ "$manager" = "pacman" ]; then
+        pkg_name="python-pip"
+      fi
+      ;;
+    python3-venv)
+      if [ "$manager" = "pacman" ]; then
+        pkg_name="python"
+      fi
+      ;;
+    rustfmt)
+      ;;
+    gofmt)
+      case "$manager" in
+        apt) pkg_name="golang-go" ;;
+        dnf) pkg_name="golang" ;;
+        pacman) pkg_name="go" ;;
+        zypper) pkg_name="go" ;;
+      esac
+      ;;
   esac
 
   if [ "$manager" = "none" ]; then
@@ -163,6 +220,193 @@ install_with_pkg_manager() {
     zypper) sudo zypper --non-interactive install "$pkg_name" ;;
     *) return 1 ;;
   esac
+}
+
+python_formatter_prereqs_ready() {
+  local tmp_root
+
+  if ! command -v python3 >/dev/null 2>&1; then
+    return 1
+  fi
+
+  tmp_root="$(mktemp -d 2>/dev/null || true)"
+  if [ -z "$tmp_root" ]; then
+    return 1
+  fi
+
+  if python3 -m venv "$tmp_root/neotui-venv-check" >/dev/null 2>&1; then
+    rm -rf "$tmp_root"
+    return 0
+  fi
+
+  rm -rf "$tmp_root"
+  return 1
+}
+
+rust_formatter_prereqs_ready() {
+  command -v rustfmt >/dev/null 2>&1
+}
+
+go_formatter_prereqs_ready() {
+  command -v gofmt >/dev/null 2>&1
+}
+
+install_python_formatter_prereqs() {
+  local manager="$1"
+  local py_venv_pkg="python3-venv"
+
+  if [ "$manager" = "apt" ] && command -v python3 >/dev/null 2>&1; then
+    local py_minor
+    py_minor="$(python3 -c 'import sys; print(f"python{sys.version_info.major}.{sys.version_info.minor}-venv")' 2>/dev/null || true)"
+    if [ -n "$py_minor" ]; then
+      py_venv_pkg="$py_minor"
+    fi
+  fi
+
+  if ! command -v python3 >/dev/null 2>&1; then
+    if ! install_with_pkg_manager python3 "$manager"; then
+      printf 'Warning: failed to install python3 automatically.\n'
+    fi
+  fi
+
+  if command -v python3 >/dev/null 2>&1 && ! python_formatter_prereqs_ready; then
+    if [ "$manager" = "apt" ] && [ "$py_venv_pkg" != "python3-venv" ]; then
+      if ! install_with_pkg_manager "$py_venv_pkg" "$manager"; then
+        printf 'Versioned venv package install failed (%s), trying python3-venv...\n' "$py_venv_pkg"
+        install_with_pkg_manager python3-venv "$manager" || true
+      fi
+    elif ! install_with_pkg_manager python3-venv "$manager"; then
+      printf 'Package-manager install failed for python3 venv support, trying pip package...\n'
+    fi
+  fi
+
+  if command -v python3 >/dev/null 2>&1 && ! python_formatter_prereqs_ready; then
+    if ! install_with_pkg_manager python3-pip "$manager"; then
+      printf 'Package-manager install failed for python3 pip, trying ensurepip bootstrap...\n'
+    fi
+  fi
+
+  if command -v python3 >/dev/null 2>&1 && ! python_formatter_prereqs_ready; then
+    if python3 -m ensurepip --default-pip >/dev/null 2>&1; then
+      printf 'Bootstrapped pip using python3 -m ensurepip.\n'
+    fi
+  fi
+}
+
+install_rust_formatter_prereqs() {
+  local manager="$1"
+
+  if rust_formatter_prereqs_ready; then
+    return 0
+  fi
+
+  if command -v rustup >/dev/null 2>&1; then
+    printf 'Installing rustfmt via rustup...\n'
+    rustup component add rustfmt || printf 'Warning: rustup failed to add rustfmt.\n'
+  fi
+
+  if ! rust_formatter_prereqs_ready; then
+    install_with_pkg_manager rustfmt "$manager" || printf 'Warning: failed to install rustfmt automatically.\n'
+  fi
+}
+
+install_go_formatter_prereqs() {
+  local manager="$1"
+
+  if go_formatter_prereqs_ready; then
+    return 0
+  fi
+
+  install_with_pkg_manager gofmt "$manager" || printf 'Warning: failed to install go/gofmt automatically.\n'
+}
+
+ensure_formatter_prereqs() {
+  local manager
+  local missing_ids=()
+  local id
+
+  if [ "$ENABLE_NVIM_IDE_PROFILE" -ne 1 ]; then
+    return 0
+  fi
+
+  if python_formatter_prereqs_ready; then
+    PYTHON_FORMATTER_PREREQS_OK=1
+  else
+    PYTHON_FORMATTER_PREREQS_OK=0
+    missing_ids+=(python)
+  fi
+
+  if rust_formatter_prereqs_ready; then
+    RUST_FORMATTER_PREREQS_OK=1
+  else
+    RUST_FORMATTER_PREREQS_OK=0
+    missing_ids+=(rust)
+  fi
+
+  if go_formatter_prereqs_ready; then
+    GO_FORMATTER_PREREQS_OK=1
+  else
+    GO_FORMATTER_PREREQS_OK=0
+    missing_ids+=(go)
+  fi
+
+  if [ "${#missing_ids[@]}" -eq 0 ]; then
+    printf 'Formatter prerequisites are satisfied for python/rust/go.\n'
+    return 0
+  fi
+
+  printf '\nSome nvim formatter prerequisites are missing:\n'
+  if [ "$PYTHON_FORMATTER_PREREQS_OK" -ne 1 ]; then
+    printf '  - Python formatter (black/ruff): python3 with venv/pip support\n'
+  fi
+  if [ "$RUST_FORMATTER_PREREQS_OK" -ne 1 ]; then
+    printf '  - Rust formatter (rustfmt): rustfmt\n'
+  fi
+  if [ "$GO_FORMATTER_PREREQS_OK" -ne 1 ]; then
+    printf '  - Go formatter (gofmt): gofmt\n'
+  fi
+
+  if ! prompt_yes_no 'Install missing formatter prerequisites now? [Y/n]: ' 'y'; then
+    printf 'Warning: some formatters will be unavailable until these dependencies are installed.\n'
+    return 0
+  fi
+
+  manager="$(detect_pkg_manager)"
+
+  for id in "${missing_ids[@]}"; do
+    case "$id" in
+      python)
+        install_python_formatter_prereqs "$manager"
+        ;;
+      rust)
+        install_rust_formatter_prereqs "$manager"
+        ;;
+      go)
+        install_go_formatter_prereqs "$manager"
+        ;;
+    esac
+  done
+
+  if python_formatter_prereqs_ready; then
+    PYTHON_FORMATTER_PREREQS_OK=1
+  else
+    PYTHON_FORMATTER_PREREQS_OK=0
+    printf 'Warning: Python formatting remains unavailable. Install python3 venv/pip support, then run :MasonToolsInstall in nvim.\n'
+  fi
+
+  if rust_formatter_prereqs_ready; then
+    RUST_FORMATTER_PREREQS_OK=1
+  else
+    RUST_FORMATTER_PREREQS_OK=0
+    printf 'Warning: Rust formatting remains unavailable. Install rustfmt and retry.\n'
+  fi
+
+  if go_formatter_prereqs_ready; then
+    GO_FORMATTER_PREREQS_OK=1
+  else
+    GO_FORMATTER_PREREQS_OK=0
+    printf 'Warning: Go formatting remains unavailable. Install go/gofmt and retry.\n'
+  fi
 }
 
 install_optional_zsh_plugins() {
@@ -310,9 +554,7 @@ ensure_requirements() {
   [ "${#outdated[@]}" -gt 0 ] && printf 'Outdated: %s\n' "${outdated[*]}"
   [ "${#unknown[@]}" -gt 0 ] && printf 'Unknown version: %s\n' "${unknown[*]}"
 
-  printf 'Install or upgrade required tools now? [y/N]: '
-  read -r response
-  if [[ ! "$response" =~ ^[Yy]$ ]]; then
+  if ! prompt_yes_no 'Install or upgrade required tools now? [y/N]: ' 'n'; then
     printf 'Install cancelled. NeoTUI requirements were not met.\n' >&2
     exit 1
   fi
@@ -398,9 +640,7 @@ copy_config_with_prompt() {
   fi
 
   printf 'Config exists: %s\n' "$label"
-  printf 'Overwrite installed config with repo default? [y/N]: '
-  read -r overwrite
-  if [[ "$overwrite" =~ ^[Yy]$ ]]; then
+  if prompt_yes_no 'Overwrite installed config with repo default? [y/N]: ' 'n'; then
     cp "$src" "$dst"
     printf 'Overwrote config: %s\n' "$label"
   else
@@ -438,9 +678,7 @@ prompt_nvim_ide_profile() {
   local ide_flag="$INSTALL_ROOT/state/nvim/ide-profile-enabled"
 
   mkdir -p "$(dirname "$ide_flag")"
-  printf 'Enable NeoTUI recommended nvim IDE profile (LSP, completion, telescope, gitsigns, formatting/linting, codeium)? [Y/n]: '
-  read -r enable_ide
-  if [[ "$enable_ide" =~ ^[Nn]$ ]]; then
+  if ! prompt_yes_no 'Enable NeoTUI recommended nvim IDE profile (LSP, completion, telescope, gitsigns, formatting/linting, codeium)? [Y/n]: ' 'y'; then
     ENABLE_NVIM_IDE_PROFILE=0
     rm -f "$ide_flag"
     printf 'Keeping minimal NeoTUI nvim profile.\n'
@@ -453,12 +691,33 @@ prompt_nvim_ide_profile() {
   fi
 }
 
+prompt_nvim_format_on_save() {
+  local format_disable_flag="$INSTALL_ROOT/state/nvim/format-on-save-disabled"
+
+  mkdir -p "$(dirname "$format_disable_flag")"
+
+  if [ "$ENABLE_NVIM_IDE_PROFILE" -ne 1 ]; then
+    ENABLE_NVIM_FORMAT_ON_SAVE=0
+    rm -f "$format_disable_flag"
+    printf 'Skipping nvim format-on-save prompt (minimal nvim profile selected).\n'
+    return 0
+  fi
+
+  if ! prompt_yes_no 'Enable nvim format-on-save in NeoTUI IDE profile? [Y/n]: ' 'y'; then
+    ENABLE_NVIM_FORMAT_ON_SAVE=0
+    : > "$format_disable_flag"
+    printf 'Disabled nvim format-on-save in NeoTUI IDE profile.\n'
+  else
+    ENABLE_NVIM_FORMAT_ON_SAVE=1
+    rm -f "$format_disable_flag"
+    printf 'Enabled nvim format-on-save in NeoTUI IDE profile.\n'
+  fi
+}
+
 prompt_history_reset() {
   local history_file="$INSTALL_ROOT/state/zsh/history"
   mkdir -p "$(dirname "$history_file")"
-  printf 'Create a brand new NeoTUI history file at %s? [y/N]: ' "$history_file"
-  read -r reset_history
-  if [[ "$reset_history" =~ ^[Yy]$ ]]; then
+  if prompt_yes_no "Create a brand new NeoTUI history file at $history_file? [y/N]: " 'n'; then
     : > "$history_file"
     printf 'Created fresh NeoTUI history file.\n'
   else
@@ -493,12 +752,37 @@ print_applied_defaults() {
   printf '\n'
 
   printf '%bNvim%b\n' "$C_SECTION" "$C_RESET"
+  printf '  - keybind: %b<leader>fm%b formats the current file\n' "$C_KEYBIND" "$C_RESET"
+  printf '  - format coverage: bash/sh/zsh/lua/json/jsonc/markdown/toml/yaml/html/css/scss/javascript/typescript/jsx/tsx/python/rust/go\n'
   printf '  - keybinds: %bCtrl+h%b (previous tab), %bCtrl+l%b (next tab)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
   printf '  - keybinds: %bS-Tab%b (Codeium accept), %bC-y%b (Codeium accept fallback), %bC-g%b (Codeium accept line)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
   printf '  - keybinds: %b<leader>e%b (toggle neo-tree), %bCtrl-w h/l%b (move explorer/editor), %bCtrl-w p%b (previous window)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
   printf '  - commands: %b:tabn%b / %b:tabp%b / %b:tabclose%b\n' "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET"
   printf '  - behavior: neo-tree %bEnter%b opens file in new nvim tab and reveals it; tabline is always visible\n' "$C_KEYBIND" "$C_RESET"
   printf '  - profile: recommended IDE defaults are installer prompt controlled (default: enabled)\n'
+  if [ "$ENABLE_NVIM_IDE_PROFILE" -eq 1 ]; then
+    if [ "$ENABLE_NVIM_FORMAT_ON_SAVE" -eq 1 ]; then
+      printf '  - format on save: enabled (installer prompt controlled, default: enabled)\n'
+    else
+      printf '  - format on save: disabled (installer prompt controlled, default: enabled)\n'
+      printf '  - note: manual format remains available via %b<leader>fm%b\n' "$C_NOTE" "$C_RESET"
+    fi
+    if [ "$PYTHON_FORMATTER_PREREQS_OK" -eq 1 ]; then
+      printf '  - python formatting: prerequisites available (black/ruff via Mason)\n'
+    else
+      printf '  - python formatting: prerequisites missing (install python3 venv/pip support, then run :MasonToolsInstall)\n'
+    fi
+    if [ "$RUST_FORMATTER_PREREQS_OK" -eq 1 ]; then
+      printf '  - rust formatting: prerequisite available (rustfmt)\n'
+    else
+      printf '  - rust formatting: prerequisite missing (install rustfmt)\n'
+    fi
+    if [ "$GO_FORMATTER_PREREQS_OK" -eq 1 ]; then
+      printf '  - go formatting: prerequisite available (gofmt)\n'
+    else
+      printf '  - go formatting: prerequisite missing (install go/gofmt)\n'
+    fi
+  fi
   printf '  - theme: catppuccin (mocha)\n'
   printf '  - explorer: neo-tree sticky mode toggled with %b<leader>e%b; commands %b:NeoTUIExplorerEnable%b / %b:NeoTUIExplorerDisable%b / %b:NeoTUIExplorerToggle%b\n' "$C_KEYBIND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET"
   printf '  - ai: run %b:Codeium Auth%b once in nvim to enable Codeium autocomplete\n' "$C_COMMAND" "$C_RESET"
@@ -514,6 +798,8 @@ load_requirements
 ensure_requirements
 
 prompt_nvim_ide_profile
+prompt_nvim_format_on_save
+ensure_formatter_prereqs
 
 pkg_manager="$(detect_pkg_manager)"
 install_optional_zsh_plugins "$pkg_manager"

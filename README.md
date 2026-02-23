@@ -64,6 +64,7 @@ Installer behavior:
 - prompts before installing/upgrading missing or outdated tools
 - prefers distro package manager installs
 - falls back to upstream binaries for `nvim` and `lf` when distro packages are unavailable or below minimum
+- when IDE profile is enabled, checks formatter prerequisites for Python/Rust/Go (`python3` venv/pip support, `rustfmt`, `gofmt`) and prompts once to install missing dependencies (warning-only if unavailable)
 - installs NeoTUI runtime home at `~/.local/share/neotui`
 - copies default configs from this repo into runtime config paths
 - prompts per config file on reinstall when installed configs differ from repo defaults
@@ -109,6 +110,10 @@ Default setup applied at install time:
 | Type | Value | Notes |
 | --- | --- | --- |
 | Feature | Recommended IDE profile prompt | Installer default is `Yes` |
+| Feature | Format on save prompt | Installer default is `Yes` (IDE profile only) |
+| Feature | Formatter prerequisites prompt | Checks Python/Rust/Go formatter dependencies and prompts once to install missing prerequisites; warning-only if missing |
+| Keybind | `<leader>fm` | Format current file manually |
+| Feature | Format coverage | bash/sh/zsh/lua/json/jsonc/markdown/toml/yaml/html/css/scss/javascript/typescript/jsx/tsx/python/rust/go |
 | Feature | IDE profile contents | lazy.nvim, built-in LSPs, blink.cmp, LuaSnip, telescope, gitsigns, formatting/linting, codeium |
 | Feature | Theme | Catppuccin (`mocha`) |
 | Feature | `ripgrep` | Recommended for Telescope `live_grep` |
@@ -194,6 +199,10 @@ Subcommands:
 | Type | Value | Notes |
 | --- | --- | --- |
 | Feature | Recommended IDE profile prompt | Installer default is `Yes` |
+| Feature | Format on save prompt | Installer default is `Yes` (IDE profile only) |
+| Feature | Formatter prerequisites prompt | Checks Python/Rust/Go formatter dependencies and prompts once to install missing prerequisites; warning-only if missing |
+| Keybind | `<leader>fm` | Format current file manually |
+| Feature | Format coverage | bash/sh/zsh/lua/json/jsonc/markdown/toml/yaml/html/css/scss/javascript/typescript/jsx/tsx/python/rust/go |
 | Feature | IDE profile contents | lazy.nvim, built-in LSPs, blink.cmp, LuaSnip, telescope, gitsigns, formatting/linting, codeium |
 | Feature | Theme | Catppuccin (`mocha`) |
 | Feature | `ripgrep` | Recommended for Telescope `live_grep` |

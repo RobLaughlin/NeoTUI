@@ -10,6 +10,8 @@ function M.setup()
   vim.opt.showtabline = 2
 
   vim.g.mapleader = " "
+  vim.g.maplocalleader = " "
+  vim.keymap.set({ "n", "v" }, "<Space>", "<Nop>", { silent = true })
   vim.keymap.set("n", "<leader>w", "<cmd>w<cr>")
   vim.keymap.set("n", "<leader>q", "<cmd>q<cr>")
   vim.keymap.set("n", "<C-h>", "gT", { noremap = true, silent = true })

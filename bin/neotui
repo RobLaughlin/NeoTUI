@@ -76,6 +76,8 @@ usage() {
   printf '  - note: default lf mark keys are disabled (%bSpace/v/u%b)\n' "$C_NOTE" "$C_RESET"
   printf '\n'
   printf '%bNvim%b\n' "$C_SECTION" "$C_RESET"
+  printf '  - keybind: %b<leader>fm%b formats the current file\n' "$C_KEYBIND" "$C_RESET"
+  printf '  - format coverage: bash/sh/zsh/lua/json/jsonc/markdown/toml/yaml/html/css/scss/javascript/typescript/jsx/tsx/python/rust/go\n'
   printf '  - keybinds: %bCtrl+h%b (previous tab), %bCtrl+l%b (next tab)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
   printf '  - keybinds: %bS-Tab%b (Codeium accept), %bC-y%b (Codeium accept fallback), %bC-g%b (Codeium accept line)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
   printf '  - keybinds: %b<leader>e%b (toggle neo-tree), %bCtrl-w h/l%b (move explorer/editor), %bCtrl-w p%b (previous window)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
@@ -84,6 +86,7 @@ usage() {
   printf '  - theme: catppuccin (mocha)\n'
   printf '  - explorer: neo-tree sticky mode toggled with %b<leader>e%b; commands %b:NeoTUIExplorerEnable%b / %b:NeoTUIExplorerDisable%b / %b:NeoTUIExplorerToggle%b\n' "$C_KEYBIND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET"
   printf '  - profile: installer-managed recommended IDE mode (default enabled)\n'
+  printf '  - format on save: installer-managed in IDE mode (default enabled)\n'
   printf '  - IDE includes: lazy.nvim, built-in LSPs, blink.cmp, LuaSnip, telescope, gitsigns, conform+nvim-lint, codeium\n'
   printf '  - ai: run %b:Codeium Auth%b once in nvim to enable Codeium autocomplete\n' "$C_COMMAND" "$C_RESET"
 }

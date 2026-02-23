@@ -13,6 +13,8 @@ function M.setup()
   vim.opt.showtabline = 2
 
   vim.g.mapleader = " "
+  vim.g.maplocalleader = " "
+  vim.keymap.set({ "n", "v" }, "<Space>", "<Nop>", { silent = true })
 end
 
 return M

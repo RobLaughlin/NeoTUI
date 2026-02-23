@@ -19,4 +19,8 @@ printf 'Cloning NeoTUI from %s...\n' "$REPO_URL"
 git clone --depth 1 --branch "$BRANCH" "$REPO_URL" "$work_dir/NeoTUI"
 
 printf 'Running install-local.sh...\n'
-bash "$work_dir/NeoTUI/install-local.sh"
+if [ -r /dev/tty ]; then
+  bash "$work_dir/NeoTUI/install-local.sh" </dev/tty
+else
+  bash "$work_dir/NeoTUI/install-local.sh"
+fi
