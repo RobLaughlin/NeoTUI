@@ -1,5 +1,6 @@
 local servers = {
   bashls = {},
+  gopls = {},
   jsonls = {},
   lua_ls = {
     settings = {
@@ -9,7 +10,9 @@ local servers = {
     },
   },
   marksman = {},
+  rust_analyzer = {},
   taplo = {},
+  ts_ls = {},
   yamlls = {},
 }
 

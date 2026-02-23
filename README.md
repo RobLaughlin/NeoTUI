@@ -112,6 +112,7 @@ Default setup applied at install time:
 | Feature | Recommended IDE profile prompt | Installer default is `Yes` |
 | Feature | Format on save prompt | Installer default is `Yes` (IDE profile only) |
 | Feature | Formatter prerequisites prompt | Checks Python/Rust/Go formatter dependencies and prompts once to install missing prerequisites; warning-only if missing |
+| Feature | Default IDE LSPs | `bashls`, `jsonls`, `lua_ls`, `marksman`, `taplo`, `yamlls`, `ts_ls`, `rust_analyzer`, `gopls` |
 | Keybind | `<leader>fm` | Format current file manually |
 | Feature | Format coverage | bash/sh/zsh/lua/json/jsonc/markdown/toml/yaml/html/css/scss/javascript/typescript/jsx/tsx/python/rust/go |
 | Feature | IDE profile contents | lazy.nvim, built-in LSPs, blink.cmp, LuaSnip, telescope, gitsigns, formatting/linting, codeium |
@@ -201,6 +202,7 @@ Subcommands:
 | Feature | Recommended IDE profile prompt | Installer default is `Yes` |
 | Feature | Format on save prompt | Installer default is `Yes` (IDE profile only) |
 | Feature | Formatter prerequisites prompt | Checks Python/Rust/Go formatter dependencies and prompts once to install missing prerequisites; warning-only if missing |
+| Feature | Default IDE LSPs | `bashls`, `jsonls`, `lua_ls`, `marksman`, `taplo`, `yamlls`, `ts_ls`, `rust_analyzer`, `gopls` |
 | Keybind | `<leader>fm` | Format current file manually |
 | Feature | Format coverage | bash/sh/zsh/lua/json/jsonc/markdown/toml/yaml/html/css/scss/javascript/typescript/jsx/tsx/python/rust/go |
 | Feature | IDE profile contents | lazy.nvim, built-in LSPs, blink.cmp, LuaSnip, telescope, gitsigns, formatting/linting, codeium |

@@ -760,6 +760,7 @@ print_applied_defaults() {
   printf '  - commands: %b:tabn%b / %b:tabp%b / %b:tabclose%b\n' "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET"
   printf '  - behavior: neo-tree %bEnter%b opens file in new nvim tab and reveals it; tabline is always visible\n' "$C_KEYBIND" "$C_RESET"
   printf '  - profile: recommended IDE defaults are installer prompt controlled (default: enabled)\n'
+  printf '  - default IDE LSPs: bashls, jsonls, lua_ls, marksman, taplo, yamlls, ts_ls, rust_analyzer, gopls\n'
   if [ "$ENABLE_NVIM_IDE_PROFILE" -eq 1 ]; then
     if [ "$ENABLE_NVIM_FORMAT_ON_SAVE" -eq 1 ]; then
       printf '  - format on save: enabled (installer prompt controlled, default: enabled)\n'
