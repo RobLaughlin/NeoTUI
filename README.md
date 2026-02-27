@@ -65,6 +65,8 @@ Installer behavior:
 - prefers distro package manager installs
 - falls back to upstream binaries for `nvim` and `lf` when distro packages are unavailable or below minimum
 - when IDE profile is enabled, checks formatter prerequisites for Python/Rust/Go (`python3` venv/pip support, `rustfmt`, `gofmt`) and prompts once to install missing dependencies (warning-only if unavailable)
+- prompts to enable nvim system clipboard sharing (default `Yes`)
+- when WSL2 is detected and nvim clipboard sharing is enabled, prompts to enable WSL2 <-> Windows host clipboard bridge (default `Yes`)
 - installs NeoTUI runtime home at `~/.local/share/neotui`
 - copies default configs from this repo into runtime config paths
 - prompts per config file on reinstall when installed configs differ from repo defaults
@@ -112,6 +114,8 @@ Default setup applied at install time:
 | Feature | Recommended IDE profile prompt | Installer default is `Yes` |
 | Feature | Format on save prompt | Installer default is `Yes` (IDE profile only) |
 | Feature | Formatter prerequisites prompt | Checks Python/Rust/Go formatter dependencies and prompts once to install missing prerequisites; warning-only if missing |
+| Feature | Clipboard sharing prompt | Installer default is `Yes`; enables nvim system clipboard integration (`unnamedplus`) |
+| Feature | WSL2 host clipboard bridge prompt | Asked only on WSL2 when clipboard sharing is enabled; installer default is `Yes` |
 | Feature | Default IDE LSPs | `bashls`, `jsonls`, `lua_ls`, `marksman`, `taplo`, `yamlls`, `ts_ls`, `rust_analyzer`, `gopls` |
 | Keybind | `<leader>fm` | Format current file manually |
 | Feature | Format coverage | bash/sh/zsh/lua/json/jsonc/markdown/toml/yaml/html/css/scss/javascript/typescript/jsx/tsx/python/rust/go |
@@ -202,6 +206,8 @@ Subcommands:
 | Feature | Recommended IDE profile prompt | Installer default is `Yes` |
 | Feature | Format on save prompt | Installer default is `Yes` (IDE profile only) |
 | Feature | Formatter prerequisites prompt | Checks Python/Rust/Go formatter dependencies and prompts once to install missing prerequisites; warning-only if missing |
+| Feature | Clipboard sharing prompt | Installer default is `Yes`; enables nvim system clipboard integration (`unnamedplus`) |
+| Feature | WSL2 host clipboard bridge prompt | Asked only on WSL2 when clipboard sharing is enabled; installer default is `Yes` |
 | Feature | Default IDE LSPs | `bashls`, `jsonls`, `lua_ls`, `marksman`, `taplo`, `yamlls`, `ts_ls`, `rust_analyzer`, `gopls` |
 | Keybind | `<leader>fm` | Format current file manually |
 | Feature | Format coverage | bash/sh/zsh/lua/json/jsonc/markdown/toml/yaml/html/css/scss/javascript/typescript/jsx/tsx/python/rust/go |

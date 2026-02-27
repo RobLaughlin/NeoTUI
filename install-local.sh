@@ -19,6 +19,9 @@ ENABLE_NVIM_FORMAT_ON_SAVE=1
 PYTHON_FORMATTER_PREREQS_OK=1
 RUST_FORMATTER_PREREQS_OK=1
 GO_FORMATTER_PREREQS_OK=1
+ENABLE_NVIM_CLIPBOARD_SHARING=1
+ENABLE_WSL_HOST_CLIPBOARD=0
+INSTALL_IS_WSL2=0
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   C_RESET=$'\033[0m'
@@ -154,6 +157,24 @@ detect_pkg_manager() {
   else
     printf 'none'
   fi
+}
+
+detect_wsl2() {
+  local osrelease=""
+
+  if [ -r /proc/sys/kernel/osrelease ]; then
+    osrelease="$(tr '[:upper:]' '[:lower:]' </proc/sys/kernel/osrelease)"
+  fi
+
+  if [[ "$osrelease" == *microsoft* ]] && [[ "$osrelease" == *wsl2* ]]; then
+    return 0
+  fi
+
+  if [ -n "${WSL_INTEROP:-}" ] && [ -S "${WSL_INTEROP}" ]; then
+    return 0
+  fi
+
+  return 1
 }
 
 install_with_pkg_manager() {
@@ -660,6 +681,7 @@ install_runtime_layout() {
   copy_config_with_prompt "$ROOT_DIR/lf/lfrc" "$INSTALL_ROOT/config/lf/lfrc" "lf/lfrc"
   copy_config_with_prompt "$ROOT_DIR/nvim/init.lua" "$INSTALL_ROOT/config/nvim/init.lua" "nvim/init.lua"
   copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/minimal.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/minimal.lua" "nvim/lua/neotui/minimal.lua"
+  copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/clipboard.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/clipboard.lua" "nvim/lua/neotui/clipboard.lua"
   copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/ide/init.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/init.lua" "nvim/lua/neotui/ide/init.lua"
   copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/ide/options.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/options.lua" "nvim/lua/neotui/ide/options.lua"
   copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/ide/explorer.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/explorer.lua" "nvim/lua/neotui/ide/explorer.lua"
@@ -714,6 +736,41 @@ prompt_nvim_format_on_save() {
   fi
 }
 
+prompt_nvim_clipboard_settings() {
+  local clipboard_disable_flag="$INSTALL_ROOT/state/nvim/clipboard-sharing-disabled"
+  local wsl_host_clipboard_disable_flag="$INSTALL_ROOT/state/nvim/wsl-host-clipboard-disabled"
+
+  mkdir -p "$(dirname "$clipboard_disable_flag")"
+
+  if ! prompt_yes_no 'Enable nvim system clipboard sharing (yank/delete uses clipboard)? [Y/n]: ' 'y'; then
+    ENABLE_NVIM_CLIPBOARD_SHARING=0
+    ENABLE_WSL_HOST_CLIPBOARD=0
+    : > "$clipboard_disable_flag"
+    printf 'Disabled nvim system clipboard sharing.\n'
+    return 0
+  fi
+
+  ENABLE_NVIM_CLIPBOARD_SHARING=1
+  rm -f "$clipboard_disable_flag"
+  printf 'Enabled nvim system clipboard sharing.\n'
+
+  if [ "$INSTALL_IS_WSL2" -ne 1 ]; then
+    ENABLE_WSL_HOST_CLIPBOARD=0
+    printf 'WSL2 not detected; skipping Windows host clipboard bridge prompt.\n'
+    return 0
+  fi
+
+  if ! prompt_yes_no 'Enable WSL2 <-> Windows host clipboard bridge for nvim? [Y/n]: ' 'y'; then
+    ENABLE_WSL_HOST_CLIPBOARD=0
+    : > "$wsl_host_clipboard_disable_flag"
+    printf 'Disabled WSL2 <-> Windows host clipboard bridge.\n'
+  else
+    ENABLE_WSL_HOST_CLIPBOARD=1
+    rm -f "$wsl_host_clipboard_disable_flag"
+    printf 'Enabled WSL2 <-> Windows host clipboard bridge.\n'
+  fi
+}
+
 prompt_history_reset() {
   local history_file="$INSTALL_ROOT/state/zsh/history"
   mkdir -p "$(dirname "$history_file")"
@@ -760,6 +817,24 @@ print_applied_defaults() {
   printf '  - commands: %b:tabn%b / %b:tabp%b / %b:tabclose%b\n' "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET"
   printf '  - behavior: neo-tree %bEnter%b opens file in new nvim tab and reveals it; tabline is always visible\n' "$C_KEYBIND" "$C_RESET"
   printf '  - profile: recommended IDE defaults are installer prompt controlled (default: enabled)\n'
+  if [ "$ENABLE_NVIM_CLIPBOARD_SHARING" -eq 1 ]; then
+    printf '  - clipboard sharing: enabled (installer prompt controlled, default: enabled)\n'
+  else
+    printf '  - clipboard sharing: disabled (installer prompt controlled, default: enabled)\n'
+  fi
+  if [ "$INSTALL_IS_WSL2" -eq 1 ]; then
+    if [ "$ENABLE_NVIM_CLIPBOARD_SHARING" -eq 1 ]; then
+      if [ "$ENABLE_WSL_HOST_CLIPBOARD" -eq 1 ]; then
+        printf '  - WSL2 host clipboard bridge: enabled (installer prompt controlled, default: enabled)\n'
+      else
+        printf '  - WSL2 host clipboard bridge: disabled (installer prompt controlled, default: enabled)\n'
+      fi
+    else
+      printf '  - WSL2 host clipboard bridge: skipped (nvim clipboard sharing disabled)\n'
+    fi
+  else
+    printf '  - WSL2 host clipboard bridge: not applicable (WSL2 not detected)\n'
+  fi
   printf '  - default IDE LSPs: bashls, jsonls, lua_ls, marksman, taplo, yamlls, ts_ls, rust_analyzer, gopls\n'
   if [ "$ENABLE_NVIM_IDE_PROFILE" -eq 1 ]; then
     if [ "$ENABLE_NVIM_FORMAT_ON_SAVE" -eq 1 ]; then
@@ -798,8 +873,13 @@ fi
 load_requirements
 ensure_requirements
 
+if detect_wsl2; then
+  INSTALL_IS_WSL2=1
+fi
+
 prompt_nvim_ide_profile
 prompt_nvim_format_on_save
+prompt_nvim_clipboard_settings
 ensure_formatter_prereqs
 
 pkg_manager="$(detect_pkg_manager)"

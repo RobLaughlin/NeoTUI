@@ -16,6 +16,8 @@ function M.setup()
   vim.keymap.set("n", "<leader>q", "<cmd>q<cr>")
   vim.keymap.set("n", "<C-h>", "gT", { noremap = true, silent = true })
   vim.keymap.set("n", "<C-l>", "gt", { noremap = true, silent = true })
+
+  require("neotui.clipboard").setup()
 end
 
 return M

@@ -15,6 +15,8 @@ function M.setup()
   vim.g.mapleader = " "
   vim.g.maplocalleader = " "
   vim.keymap.set({ "n", "v" }, "<Space>", "<Nop>", { silent = true })
+
+  require("neotui.clipboard").setup()
 end
 
 return M
