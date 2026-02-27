@@ -48,13 +48,15 @@ else
 fi
 
 usage() {
-  printf 'Usage: neotui [--debug] [tmux|zsh|nvim|lf] [args...]\n'
+  printf 'Usage: neotui [--debug] [tmux|zsh|nvim|lf|clipboard] [args...]\n'
   printf '\n'
   printf '%bSubcommands%b\n' "$C_SECTION" "$C_RESET"
   printf '  - %btmux%b (default): start NeoTUI tmux session\n' "$C_COMMAND" "$C_RESET"
   printf '  - %bzsh%b: start NeoTUI zsh\n' "$C_COMMAND" "$C_RESET"
   printf '  - %bnvim [args...]%b: start NeoTUI neovim\n' "$C_COMMAND" "$C_RESET"
   printf '  - %blf%b: start NeoTUI lf\n' "$C_COMMAND" "$C_RESET"
+  printf '  - %bclipboard <nvim|wsl2> <enable|disable>%b: toggle clipboard sharing flags\n' "$C_COMMAND" "$C_RESET"
+  printf '  - %bclipboard status%b: show clipboard sharing status\n' "$C_COMMAND" "$C_RESET"
   printf '\n'
   printf '%bTmux%b\n' "$C_SECTION" "$C_RESET"
   printf '  - status: top bar with tab navigation\n'
@@ -87,8 +89,8 @@ usage() {
   printf '  - explorer: neo-tree sticky mode toggled with %b<leader>e%b; commands %b:NeoTUIExplorerEnable%b / %b:NeoTUIExplorerDisable%b / %b:NeoTUIExplorerToggle%b\n' "$C_KEYBIND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET"
   printf '  - profile: installer-managed recommended IDE mode (default enabled)\n'
   printf '  - format on save: installer-managed in IDE mode (default enabled)\n'
-  printf '  - clipboard sharing: installer-managed nvim system clipboard integration (default enabled)\n'
-  printf '  - WSL2 host clipboard bridge: installer-managed on WSL2 only (default enabled when prompted)\n'
+  printf '  - clipboard sharing: %bneotui clipboard nvim enable|disable%b\n' "$C_COMMAND" "$C_RESET"
+  printf '  - WSL2 host clipboard bridge: %bneotui clipboard wsl2 enable|disable%b (WSL2 only)\n' "$C_COMMAND" "$C_RESET"
   printf '  - default IDE LSPs: bashls, jsonls, lua_ls, marksman, taplo, yamlls, ts_ls, rust_analyzer, gopls\n'
   printf '  - IDE includes: lazy.nvim, blink.cmp, LuaSnip, telescope, gitsigns, conform+nvim-lint, codeium\n'
   printf '  - ai: run %b:Codeium Auth%b once in nvim to enable Codeium autocomplete\n' "$C_COMMAND" "$C_RESET"
@@ -161,6 +163,92 @@ debug_report() {
 }
 
 debug_mode=0
+
+is_wsl2_runtime() {
+  local osrelease
+
+  if [ -r "/proc/sys/kernel/osrelease" ]; then
+    osrelease="$(tr '[:upper:]' '[:lower:]' < "/proc/sys/kernel/osrelease" 2>/dev/null || true)"
+    if [[ "$osrelease" == *microsoft* && "$osrelease" == *wsl2* ]]; then
+      return 0
+    fi
+  fi
+
+  [ -n "${WSL_INTEROP:-}" ]
+}
+
+clipboard_command() {
+  local scope="${1:-}"
+  local action="${2:-}"
+  local state_dir="$XDG_STATE_HOME/nvim"
+  local nvim_flag="$state_dir/clipboard-sharing-disabled"
+  local wsl2_flag="$state_dir/wsl-host-clipboard-disabled"
+
+  mkdir -p "$state_dir"
+
+  case "$scope" in
+    nvim)
+      case "$action" in
+        enable)
+          rm -f "$nvim_flag"
+          printf 'Enabled nvim system clipboard sharing.\n'
+          ;;
+        disable)
+          : > "$nvim_flag"
+          printf 'Disabled nvim system clipboard sharing.\n'
+          ;;
+        *)
+          printf 'Usage: neotui clipboard nvim <enable|disable>\n' >&2
+          return 1
+          ;;
+      esac
+      ;;
+    wsl2)
+      if ! is_wsl2_runtime; then
+        printf 'WSL2 not detected; cannot apply wsl2 clipboard command.\n' >&2
+        return 1
+      fi
+
+      case "$action" in
+        enable)
+          rm -f "$wsl2_flag"
+          printf 'Enabled WSL2 <-> Windows host clipboard bridge.\n'
+          ;;
+        disable)
+          : > "$wsl2_flag"
+          printf 'Disabled WSL2 <-> Windows host clipboard bridge.\n'
+          ;;
+        *)
+          printf 'Usage: neotui clipboard wsl2 <enable|disable>\n' >&2
+          return 1
+          ;;
+      esac
+      ;;
+    status)
+      if [ -f "$nvim_flag" ]; then
+        printf 'nvim clipboard sharing: disabled\n'
+      else
+        printf 'nvim clipboard sharing: enabled\n'
+      fi
+
+      if is_wsl2_runtime; then
+        if [ -f "$wsl2_flag" ]; then
+          printf 'wsl2 host clipboard bridge: disabled\n'
+        else
+          printf 'wsl2 host clipboard bridge: enabled\n'
+        fi
+      else
+        printf 'wsl2 host clipboard bridge: not applicable (WSL2 not detected)\n'
+      fi
+      ;;
+    *)
+      printf 'Usage: neotui clipboard <nvim|wsl2> <enable|disable>\n' >&2
+      printf '   or: neotui clipboard status\n' >&2
+      return 1
+      ;;
+  esac
+}
+
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --debug)
@@ -237,6 +325,9 @@ case "$command_name" in
     ;;
   lf)
     exec lf -config "$XDG_CONFIG_HOME/lf/lfrc" "$@"
+    ;;
+  clipboard)
+    clipboard_command "$@"
     ;;
   help|-h|--help)
     usage

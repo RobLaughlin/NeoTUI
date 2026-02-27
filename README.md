@@ -160,6 +160,9 @@ Subcommands:
 - `neotui zsh`
 - `neotui nvim [args...]`
 - `neotui lf`
+- `neotui clipboard nvim enable|disable`
+- `neotui clipboard wsl2 enable|disable` (WSL2 only; prints an error when WSL2 is not detected)
+- `neotui clipboard status`
 
 ### Tmux defaults
 
@@ -208,6 +211,9 @@ Subcommands:
 | Feature | Formatter prerequisites prompt | Checks Python/Rust/Go formatter dependencies and prompts once to install missing prerequisites; warning-only if missing |
 | Feature | Clipboard sharing prompt | Installer default is `Yes`; enables nvim system clipboard integration (`unnamedplus`) |
 | Feature | WSL2 host clipboard bridge prompt | Asked only on WSL2 when clipboard sharing is enabled; installer default is `Yes` |
+| Command | `neotui clipboard nvim enable` / `neotui clipboard nvim disable` | Post-install toggle for nvim clipboard sharing |
+| Command | `neotui clipboard wsl2 enable` / `neotui clipboard wsl2 disable` | Post-install toggle for WSL2 host clipboard bridge; requires WSL2 |
+| Command | `neotui clipboard status` | Prints effective clipboard toggle state |
 | Feature | Default IDE LSPs | `bashls`, `jsonls`, `lua_ls`, `marksman`, `taplo`, `yamlls`, `ts_ls`, `rust_analyzer`, `gopls` |
 | Keybind | `<leader>fm` | Format current file manually |
 | Feature | Format coverage | bash/sh/zsh/lua/json/jsonc/markdown/toml/yaml/html/css/scss/javascript/typescript/jsx/tsx/python/rust/go |
