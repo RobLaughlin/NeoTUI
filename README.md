@@ -70,7 +70,7 @@ Installer behavior:
 - when WSL2 is detected and nvim clipboard sharing is enabled, prompts to enable WSL2 <-> Windows host clipboard bridge (default `Yes`)
 - installs NeoTUI runtime home at `~/.local/share/neotui`
 - copies default configs from this repo into runtime config paths
-- prompts per config file on reinstall when installed configs differ from repo defaults
+- on reinstall, groups config overwrite prompts by section (`Tmux`, `Lf`, `Nvim`, `Shell (zsh)`) with bulk choices (`overwrite all`, `keep all`, or `ask per file`)
 - prints applied NeoTUI defaults during install so users know what is being enabled
 
 Default setup applied at install time:

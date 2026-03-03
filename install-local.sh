@@ -14,6 +14,7 @@ LF_UPSTREAM_VERSION="r41"
 export PATH="$INSTALL_ROOT/bin:$PATH"
 
 declare -A REQUIRED_VERSIONS=()
+declare -A CONFIG_SECTION_OVERWRITE_MODE=()
 ENABLE_NVIM_IDE_PROFILE=1
 ENABLE_NVIM_FORMAT_ON_SAVE=1
 PYTHON_FORMATTER_PREREQS_OK=1
@@ -23,6 +24,8 @@ ENABLE_NVIM_CLIPBOARD_SHARING=1
 ENABLE_WSL_HOST_CLIPBOARD=0
 INSTALL_IS_WSL2=0
 ENABLE_NVIM_AI_PROMPT_INSERTION=1
+CONFIG_OVERWRITE_COUNT=0
+CONFIG_KEEP_COUNT=0
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   C_RESET=$'\033[0m'
@@ -647,6 +650,9 @@ copy_config_with_prompt() {
   local src="$1"
   local dst="$2"
   local label="$3"
+  local section="$4"
+
+  local section_mode="${CONFIG_SECTION_OVERWRITE_MODE[$section]:-}"
 
   mkdir -p "$(dirname "$dst")"
 
@@ -661,13 +667,69 @@ copy_config_with_prompt() {
     return 0
   fi
 
-  printf 'Config exists: %s\n' "$label"
-  if prompt_yes_no 'Overwrite installed config with repo default? [y/N]: ' 'n'; then
-    cp "$src" "$dst"
-    printf 'Overwrote config: %s\n' "$label"
-  else
-    printf 'Kept installed config: %s\n' "$label"
+  if [ -z "$section_mode" ]; then
+    printf '\nConfig section: %s\n' "$section"
+    printf 'Existing installed configs in this section differ from repo defaults.\n'
+    printf 'Choose overwrite mode: [a]sk per file, [y] overwrite all, [n] keep all [a]: '
+
+    local mode_response=""
+    if [ -r /dev/tty ]; then
+      if ! read -r mode_response </dev/tty; then
+        mode_response=""
+      fi
+    fi
+
+    case "$mode_response" in
+      [Yy]*) section_mode="all_overwrite" ;;
+      [Nn]*) section_mode="all_keep" ;;
+      *) section_mode="ask" ;;
+    esac
+
+    CONFIG_SECTION_OVERWRITE_MODE["$section"]="$section_mode"
   fi
+
+  case "$section_mode" in
+    all_overwrite)
+      cp "$src" "$dst"
+      CONFIG_OVERWRITE_COUNT=$((CONFIG_OVERWRITE_COUNT + 1))
+      printf 'Overwrote config [%s]: %s\n' "$section" "$label"
+      ;;
+    all_keep)
+      CONFIG_KEEP_COUNT=$((CONFIG_KEEP_COUNT + 1))
+      printf 'Kept installed config [%s]: %s\n' "$section" "$label"
+      ;;
+    ask|*)
+      printf 'Config exists [%s]: %s\n' "$section" "$label"
+      if prompt_yes_no 'Overwrite installed config with repo default? [y/N]: ' 'n'; then
+        cp "$src" "$dst"
+        CONFIG_OVERWRITE_COUNT=$((CONFIG_OVERWRITE_COUNT + 1))
+        printf 'Overwrote config [%s]: %s\n' "$section" "$label"
+      else
+        CONFIG_KEEP_COUNT=$((CONFIG_KEEP_COUNT + 1))
+        printf 'Kept installed config [%s]: %s\n' "$section" "$label"
+      fi
+      ;;
+  esac
+}
+
+print_config_overwrite_summary() {
+  printf '\nConfig overwrite summary:\n'
+  printf '  - overwritten differing configs: %s\n' "$CONFIG_OVERWRITE_COUNT"
+  printf '  - kept differing configs: %s\n' "$CONFIG_KEEP_COUNT"
+}
+
+print_config_section_header() {
+  local section="$1"
+  printf '\n[%s config]\n' "$section"
+}
+
+install_config_section() {
+  local section="$1"
+  local src="$2"
+  local dst="$3"
+  local label="$4"
+
+  copy_config_with_prompt "$src" "$dst" "$label" "$section"
 }
 
 install_runtime_layout() {
@@ -678,24 +740,35 @@ install_runtime_layout() {
   copy_runtime_script "neotui-clean-session"
   copy_runtime_script "neotui-watch-session"
 
-  copy_config_with_prompt "$ROOT_DIR/tmux/tmux.conf" "$INSTALL_ROOT/config/tmux/tmux.conf" "tmux/tmux.conf"
-  copy_config_with_prompt "$ROOT_DIR/lf/lfrc" "$INSTALL_ROOT/config/lf/lfrc" "lf/lfrc"
-  copy_config_with_prompt "$ROOT_DIR/nvim/init.lua" "$INSTALL_ROOT/config/nvim/init.lua" "nvim/init.lua"
-  copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/minimal.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/minimal.lua" "nvim/lua/neotui/minimal.lua"
-  copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/clipboard.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/clipboard.lua" "nvim/lua/neotui/clipboard.lua"
-  copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/ide/init.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/init.lua" "nvim/lua/neotui/ide/init.lua"
-  copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/ide/options.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/options.lua" "nvim/lua/neotui/ide/options.lua"
-  copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/ide/ai_insert.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/ai_insert.lua" "nvim/lua/neotui/ide/ai_insert.lua"
-  copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/ide/explorer.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/explorer.lua" "nvim/lua/neotui/ide/explorer.lua"
-  copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/ide/keymaps.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/keymaps.lua" "nvim/lua/neotui/ide/keymaps.lua"
-  copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/ide/lazy.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/lazy.lua" "nvim/lua/neotui/ide/lazy.lua"
-  copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/ide/plugins.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/plugins.lua" "nvim/lua/neotui/ide/plugins.lua"
-  copy_config_with_prompt "$ROOT_DIR/shell/.zshrc" "$INSTALL_ROOT/config/shell/.zshrc" "shell/.zshrc"
-  copy_config_with_prompt "$ROOT_DIR/shell/env.zsh" "$INSTALL_ROOT/config/shell/env.zsh" "shell/env.zsh"
-  copy_config_with_prompt "$ROOT_DIR/shell/vi-mode.zsh" "$INSTALL_ROOT/config/shell/vi-mode.zsh" "shell/vi-mode.zsh"
-  copy_config_with_prompt "$ROOT_DIR/shell/hooks.zsh" "$INSTALL_ROOT/config/shell/hooks.zsh" "shell/hooks.zsh"
-  copy_config_with_prompt "$ROOT_DIR/shell/aliases.zsh" "$INSTALL_ROOT/config/shell/aliases.zsh" "shell/aliases.zsh"
-  copy_config_with_prompt "$ROOT_DIR/shell/plugins.zsh" "$INSTALL_ROOT/config/shell/plugins.zsh" "shell/plugins.zsh"
+  printf '\nInstalling NeoTUI runtime configs (sectioned by tool)...\n'
+
+  print_config_section_header "Tmux"
+  install_config_section "Tmux" "$ROOT_DIR/tmux/tmux.conf" "$INSTALL_ROOT/config/tmux/tmux.conf" "tmux/tmux.conf"
+
+  print_config_section_header "Lf"
+  install_config_section "Lf" "$ROOT_DIR/lf/lfrc" "$INSTALL_ROOT/config/lf/lfrc" "lf/lfrc"
+
+  print_config_section_header "Nvim"
+  install_config_section "Nvim" "$ROOT_DIR/nvim/init.lua" "$INSTALL_ROOT/config/nvim/init.lua" "nvim/init.lua"
+  install_config_section "Nvim" "$ROOT_DIR/nvim/lua/neotui/minimal.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/minimal.lua" "nvim/lua/neotui/minimal.lua"
+  install_config_section "Nvim" "$ROOT_DIR/nvim/lua/neotui/clipboard.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/clipboard.lua" "nvim/lua/neotui/clipboard.lua"
+  install_config_section "Nvim" "$ROOT_DIR/nvim/lua/neotui/ide/init.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/init.lua" "nvim/lua/neotui/ide/init.lua"
+  install_config_section "Nvim" "$ROOT_DIR/nvim/lua/neotui/ide/options.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/options.lua" "nvim/lua/neotui/ide/options.lua"
+  install_config_section "Nvim" "$ROOT_DIR/nvim/lua/neotui/ide/ai_insert.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/ai_insert.lua" "nvim/lua/neotui/ide/ai_insert.lua"
+  install_config_section "Nvim" "$ROOT_DIR/nvim/lua/neotui/ide/explorer.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/explorer.lua" "nvim/lua/neotui/ide/explorer.lua"
+  install_config_section "Nvim" "$ROOT_DIR/nvim/lua/neotui/ide/keymaps.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/keymaps.lua" "nvim/lua/neotui/ide/keymaps.lua"
+  install_config_section "Nvim" "$ROOT_DIR/nvim/lua/neotui/ide/lazy.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/lazy.lua" "nvim/lua/neotui/ide/lazy.lua"
+  install_config_section "Nvim" "$ROOT_DIR/nvim/lua/neotui/ide/plugins.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/plugins.lua" "nvim/lua/neotui/ide/plugins.lua"
+
+  print_config_section_header "Shell (zsh)"
+  install_config_section "Shell (zsh)" "$ROOT_DIR/shell/.zshrc" "$INSTALL_ROOT/config/shell/.zshrc" "shell/.zshrc"
+  install_config_section "Shell (zsh)" "$ROOT_DIR/shell/env.zsh" "$INSTALL_ROOT/config/shell/env.zsh" "shell/env.zsh"
+  install_config_section "Shell (zsh)" "$ROOT_DIR/shell/vi-mode.zsh" "$INSTALL_ROOT/config/shell/vi-mode.zsh" "shell/vi-mode.zsh"
+  install_config_section "Shell (zsh)" "$ROOT_DIR/shell/hooks.zsh" "$INSTALL_ROOT/config/shell/hooks.zsh" "shell/hooks.zsh"
+  install_config_section "Shell (zsh)" "$ROOT_DIR/shell/aliases.zsh" "$INSTALL_ROOT/config/shell/aliases.zsh" "shell/aliases.zsh"
+  install_config_section "Shell (zsh)" "$ROOT_DIR/shell/plugins.zsh" "$INSTALL_ROOT/config/shell/plugins.zsh" "shell/plugins.zsh"
+
+  print_config_overwrite_summary
 }
 
 prompt_nvim_ide_profile() {
