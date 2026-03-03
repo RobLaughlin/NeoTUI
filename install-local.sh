@@ -789,6 +789,7 @@ print_applied_defaults() {
   printf '%bTmux%b\n' "$C_SECTION" "$C_RESET"
   printf '  - status: top bar with tab navigation\n'
   printf '  - shell: zsh is the default shell inside NeoTUI tmux panes\n'
+  printf '  - prefix: %bCtrl+a%b (use %b<prefix>+a%b to send literal Ctrl+a)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
   printf '  - keybinds: %b<prefix> h/j/k/l%b (move), %b<prefix>+|%b and %b<prefix>+-%b (split), %b<prefix>+H/J/K/L%b (resize)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
   printf '  - keybind: %b<prefix>+E%b toggles lf sidebar\n' "$C_KEYBIND" "$C_RESET"
   printf '\n'

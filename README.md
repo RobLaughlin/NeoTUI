@@ -80,6 +80,7 @@ Default setup applied at install time:
 | --- | --- | --- |
 | Feature | Top status bar with tab navigation | Enabled by default |
 | Feature | zsh default shell in tmux panes | NeoTUI sessions |
+| Keybind | `Ctrl+a` | tmux prefix (`<prefix>+a` sends literal `Ctrl+a`) |
 | Keybind | `<prefix> h/j/k/l` | Pane navigation |
 | Keybind | `<prefix>+|`, `<prefix>+-` | Pane split |
 | Keybind | `<prefix>+H/J/K/L` | Pane resize |
@@ -170,6 +171,7 @@ Subcommands:
 | --- | --- | --- |
 | Feature | Top status bar with tab-style window list | Enabled by default |
 | Feature | zsh default shell in tmux panes | NeoTUI sessions |
+| Keybind | `Ctrl+a` | tmux prefix (`<prefix>+a` sends literal `Ctrl+a`) |
 | Keybind | `<prefix> h/j/k/l` | Pane navigation |
 | Keybind | `<prefix>+|`, `<prefix>+-` | Pane split |
 | Keybind | `<prefix>+H/J/K/L` | Pane resize |
