@@ -65,6 +65,7 @@ Installer behavior:
 - prefers distro package manager installs
 - falls back to upstream binaries for `nvim` and `lf` when distro packages are unavailable or below minimum
 - when IDE profile is enabled, checks formatter prerequisites for Python/Rust/Go (`python3` venv/pip support, `rustfmt`, `gofmt`) and prompts once to install missing dependencies (warning-only if unavailable)
+- prompts to enable nvim custom AI prompt code insertion with `Ctrl+k` popup generation (default `Yes`, IDE profile only)
 - prompts to enable nvim system clipboard sharing (default `Yes`)
 - when WSL2 is detected and nvim clipboard sharing is enabled, prompts to enable WSL2 <-> Windows host clipboard bridge (default `Yes`)
 - installs NeoTUI runtime home at `~/.local/share/neotui`
@@ -118,16 +119,19 @@ Default setup applied at install time:
 | Feature | Clipboard sharing prompt | Installer default is `Yes`; enables nvim system clipboard integration (`unnamedplus`) |
 | Feature | WSL2 host clipboard bridge prompt | Asked only on WSL2 when clipboard sharing is enabled; installer default is `Yes` |
 | Feature | Default IDE LSPs | `bashls`, `jsonls`, `lua_ls`, `marksman`, `taplo`, `yamlls`, `ts_ls`, `rust_analyzer`, `gopls` |
+| Feature | AI prompt insertion prompt | Installer default is `Yes` (IDE profile only) |
 | Keybind | `<leader>fm` | Format current file manually |
 | Feature | Format coverage | bash/sh/zsh/lua/json/jsonc/markdown/toml/yaml/html/css/scss/javascript/typescript/jsx/tsx/python/rust/go |
 | Feature | IDE profile contents | lazy.nvim, built-in LSPs, blink.cmp, LuaSnip, telescope, gitsigns, formatting/linting, codeium |
 | Feature | Theme | Catppuccin (`mocha`) |
 | Feature | `ripgrep` | Recommended for Telescope `live_grep` |
-| Command | `:Codeium Auth` | Run once to enable Codeium autocomplete |
+| Command | `:Codeium Auth` | Run once to enable Codeium autocomplete and `Ctrl+k` prompt insertion |
+| Feature | Codeium auth method | Browser token flow; no `OPENAI_API_KEY` export needed |
 | Feature | Codeium inline ghost text | Enabled in insert mode, supports multiline suggestions |
 | Keybind | `Shift+Tab` | Accept Codeium ghost suggestion |
 | Keybind | `Ctrl+y` | Accept Codeium ghost suggestion fallback |
 | Keybind | `Ctrl+g` | Accept next Codeium suggestion line |
+| Keybind | `Ctrl+k` | Open AI prompt popup and insert generated code at cursor |
 | Feature | Tabline | Always visible, including single-tab sessions |
 | Feature | Neo-tree explorer plugin | Sticky across tabs when enabled |
 | Keybind | `<leader>e` | Toggle Neo-tree sticky visibility |
@@ -217,16 +221,19 @@ Subcommands:
 | Command | `neotui clipboard wsl2 enable` / `neotui clipboard wsl2 disable` | Post-install toggle for WSL2 host clipboard bridge; requires WSL2 |
 | Command | `neotui clipboard status` | Prints effective clipboard toggle state |
 | Feature | Default IDE LSPs | `bashls`, `jsonls`, `lua_ls`, `marksman`, `taplo`, `yamlls`, `ts_ls`, `rust_analyzer`, `gopls` |
+| Feature | AI prompt insertion prompt | Installer default is `Yes` (IDE profile only) |
 | Keybind | `<leader>fm` | Format current file manually |
 | Feature | Format coverage | bash/sh/zsh/lua/json/jsonc/markdown/toml/yaml/html/css/scss/javascript/typescript/jsx/tsx/python/rust/go |
 | Feature | IDE profile contents | lazy.nvim, built-in LSPs, blink.cmp, LuaSnip, telescope, gitsigns, formatting/linting, codeium |
 | Feature | Theme | Catppuccin (`mocha`) |
 | Feature | `ripgrep` | Recommended for Telescope `live_grep` |
-| Command | `:Codeium Auth` | Run once to enable Codeium autocomplete |
+| Command | `:Codeium Auth` | Run once to enable Codeium autocomplete and `Ctrl+k` prompt insertion |
+| Feature | Codeium auth method | Browser token flow; no `OPENAI_API_KEY` export needed |
 | Feature | Codeium inline ghost text | Enabled in insert mode, supports multiline suggestions |
 | Keybind | `Shift+Tab` | Accept Codeium ghost suggestion |
 | Keybind | `Ctrl+y` | Accept Codeium ghost suggestion fallback |
 | Keybind | `Ctrl+g` | Accept next Codeium suggestion line |
+| Keybind | `Ctrl+k` | Open AI prompt popup and insert generated code at cursor |
 | Feature | Tabline | Always visible, including single-tab sessions |
 | Feature | Neo-tree explorer plugin | Sticky across tabs when enabled |
 | Keybind | `<leader>e` | Toggle Neo-tree sticky visibility |

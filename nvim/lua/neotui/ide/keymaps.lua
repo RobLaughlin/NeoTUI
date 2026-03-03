@@ -1,6 +1,10 @@
 local M = {}
 
 function M.setup()
+  local state_root = vim.env.XDG_STATE_HOME or vim.fn.stdpath("state")
+  local ai_prompt_disabled_flag = state_root .. "/nvim/ai-prompt-insertion-disabled"
+  local ai_prompt_enabled = vim.fn.filereadable(ai_prompt_disabled_flag) ~= 1
+
   vim.keymap.set("n", "<leader>w", "<cmd>w<cr>", { desc = "Write file" })
   vim.keymap.set("n", "<leader>q", "<cmd>q<cr>", { desc = "Quit window" })
   vim.keymap.set("n", "<leader>fm", function()
@@ -28,6 +32,12 @@ function M.setup()
   vim.keymap.set("n", "<leader>e", function()
     require("neotui.ide.explorer").toggle()
   end, { desc = "Toggle Neo-tree explorer" })
+
+  if ai_prompt_enabled then
+    vim.keymap.set("n", "<C-k>", function()
+      require("neotui.ide.ai_insert").prompt_and_insert()
+    end, { silent = true, desc = "AI prompt insert" })
+  end
 
   vim.api.nvim_create_autocmd("LspAttach", {
     callback = function(event)

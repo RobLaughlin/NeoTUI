@@ -22,6 +22,7 @@ GO_FORMATTER_PREREQS_OK=1
 ENABLE_NVIM_CLIPBOARD_SHARING=1
 ENABLE_WSL_HOST_CLIPBOARD=0
 INSTALL_IS_WSL2=0
+ENABLE_NVIM_AI_PROMPT_INSERTION=1
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   C_RESET=$'\033[0m'
@@ -684,6 +685,7 @@ install_runtime_layout() {
   copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/clipboard.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/clipboard.lua" "nvim/lua/neotui/clipboard.lua"
   copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/ide/init.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/init.lua" "nvim/lua/neotui/ide/init.lua"
   copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/ide/options.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/options.lua" "nvim/lua/neotui/ide/options.lua"
+  copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/ide/ai_insert.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/ai_insert.lua" "nvim/lua/neotui/ide/ai_insert.lua"
   copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/ide/explorer.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/explorer.lua" "nvim/lua/neotui/ide/explorer.lua"
   copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/ide/keymaps.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/keymaps.lua" "nvim/lua/neotui/ide/keymaps.lua"
   copy_config_with_prompt "$ROOT_DIR/nvim/lua/neotui/ide/lazy.lua" "$INSTALL_ROOT/config/nvim/lua/neotui/ide/lazy.lua" "nvim/lua/neotui/ide/lazy.lua"
@@ -733,6 +735,31 @@ prompt_nvim_format_on_save() {
     ENABLE_NVIM_FORMAT_ON_SAVE=1
     rm -f "$format_disable_flag"
     printf 'Enabled nvim format-on-save in NeoTUI IDE profile.\n'
+  fi
+}
+
+prompt_nvim_ai_prompt_insertion() {
+  local ai_prompt_disable_flag="$INSTALL_ROOT/state/nvim/ai-prompt-insertion-disabled"
+
+  mkdir -p "$(dirname "$ai_prompt_disable_flag")"
+
+  if [ "$ENABLE_NVIM_IDE_PROFILE" -ne 1 ]; then
+    ENABLE_NVIM_AI_PROMPT_INSERTION=0
+    rm -f "$ai_prompt_disable_flag"
+    printf 'Skipping nvim AI prompt insertion prompt (minimal nvim profile selected).\n'
+    return 0
+  fi
+
+  if ! prompt_yes_no 'Enable custom AI prompt code insertion in nvim (Ctrl+k popup prompt)? [Y/n]: ' 'y'; then
+    ENABLE_NVIM_AI_PROMPT_INSERTION=0
+    : > "$ai_prompt_disable_flag"
+    printf 'Disabled nvim AI prompt code insertion.\n'
+  else
+    ENABLE_NVIM_AI_PROMPT_INSERTION=1
+    rm -f "$ai_prompt_disable_flag"
+    printf 'Enabled nvim AI prompt code insertion (Ctrl+k).\n'
+    printf 'Run :Codeium Auth in nvim once to enable Codeium-generated insertions.\n'
+    printf 'Codeium auth uses browser token flow; no manual API key export is required.\n'
   fi
 }
 
@@ -814,6 +841,11 @@ print_applied_defaults() {
   printf '  - format coverage: bash/sh/zsh/lua/json/jsonc/markdown/toml/yaml/html/css/scss/javascript/typescript/jsx/tsx/python/rust/go\n'
   printf '  - keybinds: %bCtrl+h%b (previous tab), %bCtrl+l%b (next tab)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
   printf '  - keybinds: %bS-Tab%b (Codeium accept), %bC-y%b (Codeium accept fallback), %bC-g%b (Codeium accept line)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
+  if [ "$ENABLE_NVIM_AI_PROMPT_INSERTION" -eq 1 ]; then
+    printf '  - keybind: %bCtrl+k%b opens AI prompt and inserts generated code at cursor\n' "$C_KEYBIND" "$C_RESET"
+  else
+    printf '  - keybind: %bCtrl+k%b AI prompt insertion disabled by installer option\n' "$C_KEYBIND" "$C_RESET"
+  fi
   printf '  - keybinds: %b<leader>e%b (toggle neo-tree), %bCtrl-w h/l%b (move explorer/editor), %bCtrl-w p%b (previous window)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
   printf '  - commands: %b:tabn%b / %b:tabp%b / %b:tabclose%b\n' "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET"
   printf '  - behavior: neo-tree %bEnter%b opens file in new nvim tab and reveals it; tabline is always visible\n' "$C_KEYBIND" "$C_RESET"
@@ -862,7 +894,12 @@ print_applied_defaults() {
   fi
   printf '  - theme: catppuccin (mocha)\n'
   printf '  - explorer: neo-tree sticky mode toggled with %b<leader>e%b; commands %b:NeoTUIExplorerEnable%b / %b:NeoTUIExplorerDisable%b / %b:NeoTUIExplorerToggle%b\n' "$C_KEYBIND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET"
-  printf '  - ai: run %b:Codeium Auth%b once in nvim to enable Codeium autocomplete\n' "$C_COMMAND" "$C_RESET"
+  if [ "$ENABLE_NVIM_AI_PROMPT_INSERTION" -eq 1 ]; then
+    printf '  - ai: run %b:Codeium Auth%b once in nvim to enable Codeium autocomplete and Ctrl+k prompt insertion\n' "$C_COMMAND" "$C_RESET"
+    printf '  - auth note: Codeium uses browser token auth (no OPENAI_API_KEY export needed)\n'
+  else
+    printf '  - ai: run %b:Codeium Auth%b once in nvim to enable Codeium autocomplete\n' "$C_COMMAND" "$C_RESET"
+  fi
   printf '\n'
 }
 
@@ -880,6 +917,7 @@ fi
 
 prompt_nvim_ide_profile
 prompt_nvim_format_on_save
+prompt_nvim_ai_prompt_insertion
 prompt_nvim_clipboard_settings
 ensure_formatter_prereqs
 

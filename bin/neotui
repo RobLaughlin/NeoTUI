@@ -83,6 +83,7 @@ usage() {
   printf '  - format coverage: bash/sh/zsh/lua/json/jsonc/markdown/toml/yaml/html/css/scss/javascript/typescript/jsx/tsx/python/rust/go\n'
   printf '  - keybinds: %bCtrl+h%b (previous tab), %bCtrl+l%b (next tab)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
   printf '  - keybinds: %bS-Tab%b (Codeium accept), %bC-y%b (Codeium accept fallback), %bC-g%b (Codeium accept line)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
+  printf '  - keybind: %bCtrl+k%b opens AI prompt and inserts generated code at cursor (installer-managed, default enabled)\n' "$C_KEYBIND" "$C_RESET"
   printf '  - keybinds: %b<leader>e%b (toggle neo-tree), %bCtrl-w h/l%b (move explorer/editor), %bCtrl-w p%b (previous window)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
   printf '  - commands: %b:tabn%b / %b:tabp%b / %b:tabclose%b\n' "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET"
   printf '  - behavior: neo-tree %bEnter%b opens file in new nvim tab and reveals it; tabline is always visible\n' "$C_KEYBIND" "$C_RESET"
@@ -94,7 +95,8 @@ usage() {
   printf '  - WSL2 host clipboard bridge: %bneotui clipboard wsl2 enable|disable%b (WSL2 only)\n' "$C_COMMAND" "$C_RESET"
   printf '  - default IDE LSPs: bashls, jsonls, lua_ls, marksman, taplo, yamlls, ts_ls, rust_analyzer, gopls\n'
   printf '  - IDE includes: lazy.nvim, blink.cmp, LuaSnip, telescope, gitsigns, conform+nvim-lint, codeium\n'
-  printf '  - ai: run %b:Codeium Auth%b once in nvim to enable Codeium autocomplete\n' "$C_COMMAND" "$C_RESET"
+  printf '  - ai: run %b:Codeium Auth%b once in nvim to enable Codeium autocomplete and Ctrl+k prompt insertion\n' "$C_COMMAND" "$C_RESET"
+  printf '  - auth note: Codeium uses browser token auth (no OPENAI_API_KEY export needed)\n'
 }
 
 print_tool_info() {
