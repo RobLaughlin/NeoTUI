@@ -292,19 +292,42 @@ if debugger_enabled then
 
       local ok_registry, registry = pcall(require, "mason-registry")
 
+      local function mason_package_install_path(pkg_name)
+        if not ok_registry or not registry.has_package(pkg_name) then
+          return nil
+        end
+
+        local pkg = registry.get_package(pkg_name)
+        if not pkg:is_installed() then
+          return nil
+        end
+
+        if type(pkg.get_install_path) == "function" then
+          return pkg:get_install_path()
+        end
+
+        local ok_location, install_location = pcall(require, "mason-core.installer.InstallLocation")
+        if ok_location and install_location and install_location.global then
+          local location = install_location.global()
+          if location and location.package then
+            return location:package(pkg_name)
+          end
+        end
+
+        return vim.fn.stdpath("data") .. "/mason/packages/" .. pkg_name
+      end
+
       require("mason-nvim-dap").setup({
         ensure_installed = { "python", "delve" },
         automatic_installation = true,
       })
 
       local debugpy_python = vim.fn.exepath("python3")
-      if ok_registry and registry.has_package("debugpy") then
-        local debugpy = registry.get_package("debugpy")
-        if debugpy:is_installed() then
-          local candidate = debugpy:get_install_path() .. "/venv/bin/python"
-          if vim.fn.executable(candidate) == 1 then
-            debugpy_python = candidate
-          end
+      local debugpy_path = mason_package_install_path("debugpy")
+      if debugpy_path then
+        local candidate = debugpy_path .. "/venv/bin/python"
+        if vim.fn.executable(candidate) == 1 then
+          debugpy_python = candidate
         end
       end
 
@@ -315,13 +338,11 @@ if debugger_enabled then
       }
 
       local dlv_cmd = vim.fn.exepath("dlv")
-      if dlv_cmd == "" and ok_registry and registry.has_package("delve") then
-        local delve = registry.get_package("delve")
-        if delve:is_installed() then
-          local candidate = delve:get_install_path() .. "/dlv"
-          if vim.fn.executable(candidate) == 1 then
-            dlv_cmd = candidate
-          end
+      local delve_path = mason_package_install_path("delve")
+      if dlv_cmd == "" and delve_path then
+        local candidate = delve_path .. "/dlv"
+        if vim.fn.executable(candidate) == 1 then
+          dlv_cmd = candidate
         end
       end
       if dlv_cmd == "" then
