@@ -24,6 +24,7 @@ ENABLE_NVIM_CLIPBOARD_SHARING=1
 ENABLE_WSL_HOST_CLIPBOARD=0
 INSTALL_IS_WSL2=0
 ENABLE_NVIM_AI_PROMPT_INSERTION=1
+ENABLE_NVIM_OPENCODE_PROMPT_ROUTING=1
 CONFIG_OVERWRITE_COUNT=0
 CONFIG_KEEP_COUNT=0
 
@@ -487,6 +488,39 @@ download_file() {
   fi
 }
 
+install_opencode_upstream() {
+  printf 'Installing OpenCode from upstream installer...\n'
+  if ! command -v curl >/dev/null 2>&1; then
+    printf 'Error: curl is required to install OpenCode from upstream.\n' >&2
+    return 1
+  fi
+
+  if ! curl -fsSL https://opencode.ai/install | bash; then
+    printf 'Error: OpenCode install script failed.\n' >&2
+    return 1
+  fi
+
+  if command -v opencode >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if [ -x "$HOME/.opencode/bin/opencode" ]; then
+    export PATH="$HOME/.opencode/bin:$PATH"
+    printf 'OpenCode was installed at %s; using it for this install run.\n' "$HOME/.opencode/bin/opencode"
+    printf 'Note: add %s to PATH in your shell if needed.\n' "$HOME/.opencode/bin"
+    return 0
+  fi
+
+  if [ -x "$HOME/.local/bin/opencode" ]; then
+    export PATH="$HOME/.local/bin:$PATH"
+    printf 'OpenCode was installed at %s but may require a new shell for PATH updates.\n' "$HOME/.local/bin/opencode"
+    return 0
+  fi
+
+  printf 'Error: OpenCode install completed but opencode command is not available in PATH.\n' >&2
+  return 1
+}
+
 install_nvim_upstream() {
   if [ "$(uname -m)" != "x86_64" ]; then
     printf 'Upstream Neovim auto-install currently supports x86_64 only.\n' >&2
@@ -823,7 +857,7 @@ prompt_nvim_ai_prompt_insertion() {
     return 0
   fi
 
-  if ! prompt_yes_no 'Enable custom AI prompt code insertion in nvim (Ctrl+k popup prompt)? [Y/n]: ' 'y'; then
+  if ! prompt_yes_no 'Enable custom AI prompt code insertion in nvim (Ctrl+k provider popup)? [Y/n]: ' 'y'; then
     ENABLE_NVIM_AI_PROMPT_INSERTION=0
     : > "$ai_prompt_disable_flag"
     printf 'Disabled nvim AI prompt code insertion.\n'
@@ -831,8 +865,46 @@ prompt_nvim_ai_prompt_insertion() {
     ENABLE_NVIM_AI_PROMPT_INSERTION=1
     rm -f "$ai_prompt_disable_flag"
     printf 'Enabled nvim AI prompt code insertion (Ctrl+k).\n'
-    printf 'Run :Codeium Auth in nvim once to enable Codeium-generated insertions.\n'
-    printf 'Codeium auth uses browser token flow; no manual API key export is required.\n'
+    printf 'Ctrl+k prompt uses the active provider and shows auth/model context in the prompt label.\n'
+    printf 'Switch provider/auth with <leader>ap (or :NeoTUIAIProvider) and select model with <leader>am (or :NeoTUIAIModel).\n'
+  fi
+}
+
+prompt_nvim_opencode_prompt_routing() {
+  local provider_state_file="$INSTALL_ROOT/state/nvim/ai-prompt-provider"
+  mkdir -p "$(dirname "$provider_state_file")"
+
+  if [ "$ENABLE_NVIM_AI_PROMPT_INSERTION" -ne 1 ]; then
+    ENABLE_NVIM_OPENCODE_PROMPT_ROUTING=0
+    return 0
+  fi
+
+  if prompt_yes_no 'Use OpenCode for nvim prompt insertion/provider-model routing? [Y/n]: ' 'y'; then
+    ENABLE_NVIM_OPENCODE_PROMPT_ROUTING=1
+    if ! command -v opencode >/dev/null 2>&1 && [ ! -x "$HOME/.opencode/bin/opencode" ] && [ ! -x "$HOME/.local/bin/opencode" ]; then
+      printf 'OpenCode was not found in PATH.\n'
+      if prompt_yes_no 'Install OpenCode now using curl -fsSL https://opencode.ai/install | bash ? [Y/n]: ' 'y'; then
+        if install_opencode_upstream; then
+          printf 'Installed OpenCode successfully.\n'
+        else
+          ENABLE_NVIM_OPENCODE_PROMPT_ROUTING=0
+          printf 'OpenCode install failed; prompt insertion will default to Codeium provider.\n'
+        fi
+      else
+        ENABLE_NVIM_OPENCODE_PROMPT_ROUTING=0
+        printf 'Skipping OpenCode install; prompt insertion will default to Codeium provider.\n'
+      fi
+    fi
+  else
+    ENABLE_NVIM_OPENCODE_PROMPT_ROUTING=0
+    printf 'Keeping Codeium as default nvim prompt insertion provider.\n'
+  fi
+
+  if [ "$ENABLE_NVIM_OPENCODE_PROMPT_ROUTING" -eq 1 ]; then
+    printf 'opencode\n' >"$provider_state_file"
+    printf 'Set nvim prompt insertion default provider to OpenCode.\n'
+  else
+    printf 'codeium\n' >"$provider_state_file"
   fi
 }
 
@@ -915,7 +987,9 @@ print_applied_defaults() {
   printf '  - keybinds: %bCtrl+h%b (previous tab), %bCtrl+l%b (next tab)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
   printf '  - keybinds: %bS-Tab%b (Codeium accept), %bC-y%b (Codeium accept fallback), %bC-g%b (Codeium accept line)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
   if [ "$ENABLE_NVIM_AI_PROMPT_INSERTION" -eq 1 ]; then
-    printf '  - keybind: %bCtrl+k%b opens AI prompt and inserts generated code at cursor\n' "$C_KEYBIND" "$C_RESET"
+    printf '  - keybind: %bCtrl+k%b opens AI prompt with auth/provider/model label and inserts generated code at cursor\n' "$C_KEYBIND" "$C_RESET"
+    printf '  - keybinds: %b<leader>ap%b opens AI provider/auth menu, %b<leader>am%b opens AI model selector\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
+    printf '  - ai prompt controls: %b:NeoTUIAIProvider%b (switch), %b:NeoTUIAIModel%b (model), %b:NeoTUIAIStatus%b (status)\n' "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET"
   else
     printf '  - keybind: %bCtrl+k%b AI prompt insertion disabled by installer option\n' "$C_KEYBIND" "$C_RESET"
   fi
@@ -968,8 +1042,16 @@ print_applied_defaults() {
   printf '  - theme: catppuccin (mocha)\n'
   printf '  - explorer: neo-tree sticky mode toggled with %b<leader>e%b; commands %b:NeoTUIExplorerEnable%b / %b:NeoTUIExplorerDisable%b / %b:NeoTUIExplorerToggle%b\n' "$C_KEYBIND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET"
   if [ "$ENABLE_NVIM_AI_PROMPT_INSERTION" -eq 1 ]; then
-    printf '  - ai: run %b:Codeium Auth%b once in nvim to enable Codeium autocomplete and Ctrl+k prompt insertion\n' "$C_COMMAND" "$C_RESET"
-    printf '  - auth note: Codeium uses browser token auth (no OPENAI_API_KEY export needed)\n'
+    printf '  - ai: run %b:Codeium Auth%b once in nvim to enable Codeium autocomplete\n' "$C_COMMAND" "$C_RESET"
+    if [ "$ENABLE_NVIM_OPENCODE_PROMPT_ROUTING" -eq 1 ]; then
+      printf '  - ai prompt default provider: OpenCode (installer prompt controlled, default: enabled)\n'
+      printf '  - ai prompt auth: OpenCode via %bopencode auth login%b (provider/model routing), Codeium via %b:Codeium Auth%b\n' "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET"
+    else
+      printf '  - ai prompt default provider: Codeium (OpenCode routing disabled by installer choice)\n'
+      printf '  - ai prompt auth: Codeium via %b:Codeium Auth%b; OpenCode optional via %bopencode auth login%b\n' "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET"
+    fi
+    printf '  - ai prompt switch: %b<leader>ap%b or %b:NeoTUIAIProvider%b\n' "$C_KEYBIND" "$C_RESET" "$C_COMMAND" "$C_RESET"
+    printf '  - ai model switch: %b<leader>am%b or %b:NeoTUIAIModel%b (OpenCode models; Codeium stays auto/default)\n' "$C_KEYBIND" "$C_RESET" "$C_COMMAND" "$C_RESET"
   else
     printf '  - ai: run %b:Codeium Auth%b once in nvim to enable Codeium autocomplete\n' "$C_COMMAND" "$C_RESET"
   fi
@@ -991,6 +1073,7 @@ fi
 prompt_nvim_ide_profile
 prompt_nvim_format_on_save
 prompt_nvim_ai_prompt_insertion
+prompt_nvim_opencode_prompt_routing
 prompt_nvim_clipboard_settings
 ensure_formatter_prereqs
 

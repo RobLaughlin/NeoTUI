@@ -34,6 +34,12 @@ function M.setup()
   end, { desc = "Toggle Neo-tree explorer" })
 
   if ai_prompt_enabled then
+    vim.keymap.set("n", "<leader>ap", function()
+      require("neotui.ide.ai_insert").select_provider()
+    end, { silent = true, desc = "AI provider/auth menu" })
+    vim.keymap.set("n", "<leader>am", function()
+      require("neotui.ide.ai_insert").select_model()
+    end, { silent = true, desc = "AI model select" })
     vim.keymap.set("n", "<C-k>", function()
       require("neotui.ide.ai_insert").prompt_and_insert()
     end, { silent = true, desc = "AI prompt insert" })

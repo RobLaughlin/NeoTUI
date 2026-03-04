@@ -65,7 +65,8 @@ Installer behavior:
 - prefers distro package manager installs
 - falls back to upstream binaries for `nvim` and `lf` when distro packages are unavailable or below minimum
 - when IDE profile is enabled, checks formatter prerequisites for Python/Rust/Go (`python3` venv/pip support, `rustfmt`, `gofmt`) and prompts once to install missing dependencies (warning-only if unavailable)
-- prompts to enable nvim custom AI prompt code insertion with `Ctrl+k` popup generation (default `Yes`, IDE profile only)
+- prompts to enable nvim custom AI prompt code insertion with `Ctrl+k` provider-aware popup generation (default `Yes`, IDE profile only)
+- when AI prompt insertion is enabled, prompts to use OpenCode for prompt insertion/provider-model routing (default `Yes`), and installs OpenCode via `curl -fsSL https://opencode.ai/install | bash` when requested and missing
 - prompts to enable nvim system clipboard sharing (default `Yes`)
 - when WSL2 is detected and nvim clipboard sharing is enabled, prompts to enable WSL2 <-> Windows host clipboard bridge (default `Yes`)
 - installs NeoTUI runtime home at `~/.local/share/neotui`
@@ -125,13 +126,18 @@ Default setup applied at install time:
 | Feature | IDE profile contents | lazy.nvim, built-in LSPs, blink.cmp, LuaSnip, telescope, gitsigns, formatting/linting, codeium |
 | Feature | Theme | Catppuccin (`mocha`) |
 | Feature | `ripgrep` | Recommended for Telescope `live_grep` |
-| Command | `:Codeium Auth` | Run once to enable Codeium autocomplete and `Ctrl+k` prompt insertion |
-| Feature | Codeium auth method | Browser token flow; no `OPENAI_API_KEY` export needed |
+| Command | `:NeoTUIAIProvider` | Provider/auth menu: switch `opencode`/`codeium`, OpenCode login/status, show status |
+| Command | `:NeoTUIAIModel` | Select prompt insertion model from `opencode models` (Codeium remains auto/default) |
+| Command | `:NeoTUIAIStatus` | Show active prompt provider/model and auth readiness |
+| Command | `:Codeium Auth` | Run once to enable Codeium autocomplete and optional Codeium prompt insertion |
+| Feature | AI provider auth | OpenCode via `opencode auth login`; Codeium via browser auth |
 | Feature | Codeium inline ghost text | Enabled in insert mode, supports multiline suggestions |
 | Keybind | `Shift+Tab` | Accept Codeium ghost suggestion |
 | Keybind | `Ctrl+y` | Accept Codeium ghost suggestion fallback |
 | Keybind | `Ctrl+g` | Accept next Codeium suggestion line |
-| Keybind | `Ctrl+k` | Open AI prompt popup and insert generated code at cursor |
+| Keybind | `Ctrl+k` | Open auth/provider/model-aware AI prompt label and insert generated code at cursor |
+| Keybind | `<leader>ap` | Open AI provider/auth menu |
+| Keybind | `<leader>am` | Open AI model selector (`opencode models`) |
 | Feature | Tabline | Always visible, including single-tab sessions |
 | Feature | Neo-tree explorer plugin | Sticky across tabs when enabled |
 | Keybind | `<leader>e` | Toggle Neo-tree sticky visibility |
@@ -227,13 +233,18 @@ Subcommands:
 | Feature | IDE profile contents | lazy.nvim, built-in LSPs, blink.cmp, LuaSnip, telescope, gitsigns, formatting/linting, codeium |
 | Feature | Theme | Catppuccin (`mocha`) |
 | Feature | `ripgrep` | Recommended for Telescope `live_grep` |
-| Command | `:Codeium Auth` | Run once to enable Codeium autocomplete and `Ctrl+k` prompt insertion |
-| Feature | Codeium auth method | Browser token flow; no `OPENAI_API_KEY` export needed |
+| Command | `:NeoTUIAIProvider` | Provider/auth menu: switch `opencode`/`codeium`, OpenCode login/status, show status |
+| Command | `:NeoTUIAIModel` | Select prompt insertion model from `opencode models` (Codeium remains auto/default) |
+| Command | `:NeoTUIAIStatus` | Show active prompt provider/model and auth readiness |
+| Command | `:Codeium Auth` | Run once to enable Codeium autocomplete and optional Codeium prompt insertion |
+| Feature | AI provider auth | OpenCode via `opencode auth login`; Codeium via browser auth |
 | Feature | Codeium inline ghost text | Enabled in insert mode, supports multiline suggestions |
 | Keybind | `Shift+Tab` | Accept Codeium ghost suggestion |
 | Keybind | `Ctrl+y` | Accept Codeium ghost suggestion fallback |
 | Keybind | `Ctrl+g` | Accept next Codeium suggestion line |
-| Keybind | `Ctrl+k` | Open AI prompt popup and insert generated code at cursor |
+| Keybind | `Ctrl+k` | Open auth/provider/model-aware AI prompt label and insert generated code at cursor |
+| Keybind | `<leader>ap` | Open AI provider/auth menu |
+| Keybind | `<leader>am` | Open AI model selector (`opencode models`) |
 | Feature | Tabline | Always visible, including single-tab sessions |
 | Feature | Neo-tree explorer plugin | Sticky across tabs when enabled |
 | Keybind | `<leader>e` | Toggle Neo-tree sticky visibility |
