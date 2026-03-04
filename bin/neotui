@@ -23,6 +23,12 @@ export XDG_STATE_HOME="$ROOT_DIR/state"
 export XDG_CACHE_HOME="$ROOT_DIR/cache"
 export NEOTUI_CONFIG_HOME="$XDG_CONFIG_HOME"
 export GH_CONFIG_DIR="$XDG_CONFIG_HOME/gh"
+for system_bin in /usr/local/bin /usr/bin /bin /usr/sbin /sbin; do
+  case ":$PATH:" in
+    *":$system_bin:"*) ;;
+    *) PATH="$PATH:$system_bin" ;;
+  esac
+done
 export PATH="$ROOT_DIR/bin:$PATH"
 export ZDOTDIR="$XDG_CONFIG_HOME/shell"
 export HISTFILE="$XDG_STATE_HOME/zsh/history"

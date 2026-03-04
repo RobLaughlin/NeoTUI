@@ -36,6 +36,10 @@ local function python_mason_ready()
   return vim.v.shell_error == 0
 end
 
+local function stylua_mason_ready()
+  return vim.fn.executable("unzip") == 1 or vim.fn.executable("stylua") == 1
+end
+
 local plugins = {
   {
     "catppuccin/nvim",
@@ -66,11 +70,22 @@ local plugins = {
       require("mason-tool-installer").setup({
         ensure_installed = (function()
           local tools = {
-            "stylua",
             "shfmt",
             "shellcheck",
             "prettier",
           }
+
+          if stylua_mason_ready() then
+            tools[#tools + 1] = "stylua"
+          else
+            vim.schedule(function()
+              vim.notify(
+                "Skipping Mason stylua install: unzip not found in PATH. "
+                  .. "Install unzip, then run :MasonToolsInstall.",
+                vim.log.levels.WARN
+              )
+            end)
+          end
 
           if python_mason_ready() then
             tools[#tools + 1] = "black"

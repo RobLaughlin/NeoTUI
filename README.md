@@ -64,7 +64,7 @@ Installer behavior:
 - prompts before installing/upgrading missing or outdated tools
 - prefers distro package manager installs
 - falls back to upstream binaries for `nvim` and `lf` when distro packages are unavailable or below minimum
-- when IDE profile is enabled, checks formatter prerequisites for Python/Rust/Go (`python3` venv/pip support, `rustfmt`, `gofmt`) and prompts once to install missing dependencies (warning-only if unavailable)
+- when IDE profile is enabled, checks formatter prerequisites for Python/Rust/Go/Lua (`python3` venv/pip support, `rustfmt`, `gofmt`, `unzip` for Mason `stylua`) and prompts once to install missing dependencies (warning-only if unavailable)
 - prompts to enable nvim custom AI prompt code insertion with `Ctrl+k` provider-aware popup generation (default `Yes`, IDE profile only)
 - when AI prompt insertion is enabled, prompts to use OpenCode for prompt insertion/provider-model routing (default `Yes`), and installs OpenCode via `curl -fsSL https://opencode.ai/install | bash` when requested and missing
 - prompts to enable nvim debugger features (DAP + debugger UI) (default `Yes`, IDE profile only)
@@ -117,7 +117,7 @@ Default setup applied at install time:
 | --- | --- | --- |
 | Feature | Recommended IDE profile prompt | Installer default is `Yes` |
 | Feature | Format on save prompt | Installer default is `Yes` (IDE profile only) |
-| Feature | Formatter prerequisites prompt | Checks Python/Rust/Go formatter dependencies and prompts once to install missing prerequisites; warning-only if missing |
+| Feature | Formatter prerequisites prompt | Checks Python/Rust/Go/Lua formatter dependencies and prompts once to install missing prerequisites; warning-only if missing |
 | Feature | Clipboard sharing prompt | Installer default is `Yes`; enables nvim system clipboard integration (`unnamedplus`) |
 | Feature | WSL2 host clipboard bridge prompt | Asked only on WSL2 when clipboard sharing is enabled; installer default is `Yes` |
 | Feature | Default IDE LSPs | `bashls`, `jsonls`, `lua_ls`, `marksman`, `taplo`, `yamlls`, `ts_ls`, `rust_analyzer`, `gopls` |
@@ -227,7 +227,7 @@ Subcommands:
 | --- | --- | --- |
 | Feature | Recommended IDE profile prompt | Installer default is `Yes` |
 | Feature | Format on save prompt | Installer default is `Yes` (IDE profile only) |
-| Feature | Formatter prerequisites prompt | Checks Python/Rust/Go formatter dependencies and prompts once to install missing prerequisites; warning-only if missing |
+| Feature | Formatter prerequisites prompt | Checks Python/Rust/Go/Lua formatter dependencies and prompts once to install missing prerequisites; warning-only if missing |
 | Feature | Clipboard sharing prompt | Installer default is `Yes`; enables nvim system clipboard integration (`unnamedplus`) |
 | Feature | WSL2 host clipboard bridge prompt | Asked only on WSL2 when clipboard sharing is enabled; installer default is `Yes` |
 | Command | `neotui clipboard nvim enable` / `neotui clipboard nvim disable` | Post-install toggle for nvim clipboard sharing |

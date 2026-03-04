@@ -20,6 +20,7 @@ ENABLE_NVIM_FORMAT_ON_SAVE=1
 PYTHON_FORMATTER_PREREQS_OK=1
 RUST_FORMATTER_PREREQS_OK=1
 GO_FORMATTER_PREREQS_OK=1
+STYLUA_INSTALL_PREREQ_OK=1
 ENABLE_NVIM_CLIPBOARD_SHARING=1
 ENABLE_WSL_HOST_CLIPBOARD=0
 INSTALL_IS_WSL2=0
@@ -278,6 +279,10 @@ go_formatter_prereqs_ready() {
   command -v gofmt >/dev/null 2>&1
 }
 
+stylua_install_prereq_ready() {
+  command -v unzip >/dev/null 2>&1
+}
+
 install_python_formatter_prereqs() {
   local manager="$1"
   local py_venv_pkg="python3-venv"
@@ -347,6 +352,11 @@ install_go_formatter_prereqs() {
   install_with_pkg_manager gofmt "$manager" || printf 'Warning: failed to install go/gofmt automatically.\n'
 }
 
+install_stylua_prereq() {
+  local manager="$1"
+  install_with_pkg_manager unzip "$manager" || printf 'Warning: failed to install unzip automatically.\n'
+}
+
 ensure_formatter_prereqs() {
   local manager
   local missing_ids=()
@@ -377,8 +387,15 @@ ensure_formatter_prereqs() {
     missing_ids+=(go)
   fi
 
+  if stylua_install_prereq_ready; then
+    STYLUA_INSTALL_PREREQ_OK=1
+  else
+    STYLUA_INSTALL_PREREQ_OK=0
+    missing_ids+=(stylua)
+  fi
+
   if [ "${#missing_ids[@]}" -eq 0 ]; then
-    printf 'Formatter prerequisites are satisfied for python/rust/go.\n'
+    printf 'Formatter prerequisites are satisfied for python/rust/go/lua.\n'
     return 0
   fi
 
@@ -391,6 +408,9 @@ ensure_formatter_prereqs() {
   fi
   if [ "$GO_FORMATTER_PREREQS_OK" -ne 1 ]; then
     printf '  - Go formatter (gofmt): gofmt\n'
+  fi
+  if [ "$STYLUA_INSTALL_PREREQ_OK" -ne 1 ]; then
+    printf '  - Lua formatter install support (stylua via Mason): unzip\n'
   fi
 
   if ! prompt_yes_no 'Install missing formatter prerequisites now? [Y/n]: ' 'y'; then
@@ -410,6 +430,9 @@ ensure_formatter_prereqs() {
         ;;
       go)
         install_go_formatter_prereqs "$manager"
+        ;;
+      stylua)
+        install_stylua_prereq "$manager"
         ;;
     esac
   done
@@ -433,6 +456,13 @@ ensure_formatter_prereqs() {
   else
     GO_FORMATTER_PREREQS_OK=0
     printf 'Warning: Go formatting remains unavailable. Install go/gofmt and retry.\n'
+  fi
+
+  if stylua_install_prereq_ready; then
+    STYLUA_INSTALL_PREREQ_OK=1
+  else
+    STYLUA_INSTALL_PREREQ_OK=0
+    printf 'Warning: Mason stylua install remains unavailable. Install unzip and run :MasonToolsInstall in nvim.\n'
   fi
 }
 
@@ -1065,6 +1095,11 @@ print_applied_defaults() {
       printf '  - go formatting: prerequisite available (gofmt)\n'
     else
       printf '  - go formatting: prerequisite missing (install go/gofmt)\n'
+    fi
+    if [ "$STYLUA_INSTALL_PREREQ_OK" -eq 1 ]; then
+      printf '  - lua formatting install support: available (unzip for Mason stylua)\n'
+    else
+      printf '  - lua formatting install support: missing (install unzip, then run :MasonToolsInstall)\n'
     fi
   fi
   printf '  - theme: catppuccin (mocha)\n'
