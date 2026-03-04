@@ -3,8 +3,11 @@ local M = {}
 local PROVIDERS = { "opencode", "codeium" }
 local DEFAULT_PROVIDER = "codeium"
 local OPENCODE_DEFAULT_MODEL = "openai/gpt-5.3-codex"
+local OPENCODE_FILE_SESSIONS_FILE = "ai-opencode-file-sessions.json"
 local STATE_ROOT = (vim.uv and vim.uv.os_getenv and vim.uv.os_getenv("XDG_STATE_HOME")) or os.getenv("XDG_STATE_HOME") or vim.fn.stdpath("state")
 local STATE_DIR = STATE_ROOT .. "/nvim"
+local opencode_buffer_sessions = {}
+local decode_json
 
 local function state_root()
   return STATE_ROOT
@@ -37,6 +40,83 @@ end
 
 local function write_state(name, value)
   vim.fn.writefile({ value }, state_file(name))
+end
+
+local function read_json_state(name)
+  local path = state_file(name)
+  if vim.fn.filereadable(path) ~= 1 then
+    return {}
+  end
+
+  local raw = table.concat(vim.fn.readfile(path), "\n")
+  if vim.trim(raw) == "" then
+    return {}
+  end
+
+  local decoded = decode_json(raw)
+  if type(decoded) ~= "table" then
+    return {}
+  end
+
+  local out = {}
+  for key, value in pairs(decoded) do
+    if type(key) == "string" and type(value) == "string" and value ~= "" then
+      out[key] = value
+    end
+  end
+  return out
+end
+
+local function write_json_state(name, value)
+  local encoded = vim.json.encode(value or {})
+  vim.fn.writefile(vim.split(encoded, "\n", { plain = true }), state_file(name))
+end
+
+local function get_buf_file_key(bufnr)
+  local name = vim.api.nvim_buf_get_name(bufnr)
+  if name == "" then
+    return nil
+  end
+
+  local absolute = vim.fn.fnamemodify(name, ":p")
+  if absolute == "" then
+    return nil
+  end
+
+  return absolute
+end
+
+local function get_opencode_session_for_buffer(bufnr)
+  local file_key = get_buf_file_key(bufnr)
+  if not file_key then
+    return opencode_buffer_sessions[bufnr], nil
+  end
+
+  local file_sessions = read_json_state(OPENCODE_FILE_SESSIONS_FILE)
+  return file_sessions[file_key], file_key
+end
+
+local function set_opencode_session_for_buffer(bufnr, file_key, session_id)
+  if not session_id or session_id == "" then
+    return
+  end
+
+  if not file_key then
+    opencode_buffer_sessions[bufnr] = session_id
+    return
+  end
+
+  local file_sessions = read_json_state(OPENCODE_FILE_SESSIONS_FILE)
+  file_sessions[file_key] = session_id
+  write_json_state(OPENCODE_FILE_SESSIONS_FILE, file_sessions)
+end
+
+local function clear_opencode_file_sessions()
+  opencode_buffer_sessions = {}
+  local path = state_file(OPENCODE_FILE_SESSIONS_FILE)
+  if vim.fn.filereadable(path) == 1 then
+    vim.fn.delete(path)
+  end
 end
 
 local function provider_is_valid(provider)
@@ -83,7 +163,7 @@ local function set_model(provider, model)
   return false
 end
 
-local function decode_json(data)
+decode_json = function(data)
   if not data or data == "" then
     return nil
   end
@@ -380,17 +460,26 @@ local function codeium_prompt_insert(prompt, bufnr, target_cursor)
   end)
 end
 
-local function parse_opencode_text(stdout)
+local function parse_opencode_output(stdout)
   local output = {}
+  local session_id
   for _, line in ipairs(vim.split(stdout or "", "\n", { plain = true })) do
     if line ~= "" then
       local decoded = decode_json(line)
-      if decoded and decoded.type == "text" and decoded.part and decoded.part.text then
-        table.insert(output, decoded.part.text)
+      if decoded then
+        if type(decoded.sessionID) == "string" and decoded.sessionID ~= "" then
+          session_id = decoded.sessionID
+        end
+        if decoded.part and type(decoded.part.sessionID) == "string" and decoded.part.sessionID ~= "" then
+          session_id = decoded.part.sessionID
+        end
+        if decoded.type == "text" and decoded.part and decoded.part.text then
+          table.insert(output, decoded.part.text)
+        end
       end
     end
   end
-  return table.concat(output, "\n")
+  return table.concat(output, "\n"), session_id
 end
 
 local function opencode_prompt_insert(prompt, bufnr, target_cursor)
@@ -410,31 +499,50 @@ local function opencode_prompt_insert(prompt, bufnr, target_cursor)
 
     local model = get_model("opencode")
     local request_prompt = prompt_with_context(bufnr, target_cursor, prompt)
-    local args = {
-      cmd,
-      "run",
-      request_prompt,
-      "--format",
-      "json",
-      "-m",
-      model,
-    }
+    local existing_session, file_key = get_opencode_session_for_buffer(bufnr)
 
-    vim.system(args, { text = true }, function(result)
-      vim.schedule(function()
-        if result.code ~= 0 then
-          local message = vim.trim(result.stderr or "")
-          if message == "" then
-            message = "opencode run failed"
+    local function run_with_session(session_id, allow_retry)
+      local args = {
+        cmd,
+        "run",
+        request_prompt,
+        "--format",
+        "json",
+        "-m",
+        model,
+      }
+
+      if session_id and session_id ~= "" then
+        table.insert(args, "--session")
+        table.insert(args, session_id)
+      end
+
+      vim.system(args, { text = true }, function(result)
+        vim.schedule(function()
+          if result.code ~= 0 then
+            if allow_retry and session_id and session_id ~= "" then
+              run_with_session(nil, false)
+              return
+            end
+
+            local message = vim.trim(result.stderr or "")
+            if message == "" then
+              message = "opencode run failed"
+            end
+            vim.notify("OpenCode request failed: " .. message, vim.log.levels.ERROR)
+            return
           end
-          vim.notify("OpenCode request failed: " .. message, vim.log.levels.ERROR)
-          return
-        end
 
-        local generated = parse_opencode_text(result.stdout)
-        insert_generated(bufnr, target_cursor, generated)
+          local generated, returned_session = parse_opencode_output(result.stdout)
+          if returned_session and returned_session ~= "" then
+            set_opencode_session_for_buffer(bufnr, file_key, returned_session)
+          end
+          insert_generated(bufnr, target_cursor, generated)
+        end)
       end)
-    end)
+    end
+
+    run_with_session(existing_session, true)
   end)
 end
 
@@ -545,6 +653,7 @@ function M.select_provider()
     "Switch provider",
     "OpenCode login",
     "OpenCode auth status",
+    "Clear OpenCode file sessions",
     "Show AI status",
   }
 
@@ -587,6 +696,12 @@ function M.select_provider()
 
     if choice == "OpenCode auth status" then
       show_opencode_auth_status()
+      return
+    end
+
+    if choice == "Clear OpenCode file sessions" then
+      clear_opencode_file_sessions()
+      vim.notify("Cleared OpenCode file-scoped prompt sessions.", vim.log.levels.INFO)
       return
     end
 
