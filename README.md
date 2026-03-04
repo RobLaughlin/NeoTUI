@@ -67,6 +67,7 @@ Installer behavior:
 - when IDE profile is enabled, checks formatter prerequisites for Python/Rust/Go (`python3` venv/pip support, `rustfmt`, `gofmt`) and prompts once to install missing dependencies (warning-only if unavailable)
 - prompts to enable nvim custom AI prompt code insertion with `Ctrl+k` provider-aware popup generation (default `Yes`, IDE profile only)
 - when AI prompt insertion is enabled, prompts to use OpenCode for prompt insertion/provider-model routing (default `Yes`), and installs OpenCode via `curl -fsSL https://opencode.ai/install | bash` when requested and missing
+- prompts to enable nvim debugger features (DAP + debugger UI) (default `Yes`, IDE profile only)
 - prompts to enable nvim system clipboard sharing (default `Yes`)
 - when WSL2 is detected and nvim clipboard sharing is enabled, prompts to enable WSL2 <-> Windows host clipboard bridge (default `Yes`)
 - installs NeoTUI runtime home at `~/.local/share/neotui`
@@ -121,9 +122,11 @@ Default setup applied at install time:
 | Feature | WSL2 host clipboard bridge prompt | Asked only on WSL2 when clipboard sharing is enabled; installer default is `Yes` |
 | Feature | Default IDE LSPs | `bashls`, `jsonls`, `lua_ls`, `marksman`, `taplo`, `yamlls`, `ts_ls`, `rust_analyzer`, `gopls` |
 | Feature | AI prompt insertion prompt | Installer default is `Yes` (IDE profile only) |
+| Feature | Debugger prompt | Installer default is `Yes` (IDE profile only) |
 | Keybind | `<leader>fm` | Format current file manually |
 | Feature | Format coverage | bash/sh/zsh/lua/json/jsonc/markdown/toml/yaml/html/css/scss/javascript/typescript/jsx/tsx/python/rust/go |
 | Feature | IDE profile contents | lazy.nvim, built-in LSPs, blink.cmp, LuaSnip, telescope, gitsigns, formatting/linting, codeium |
+| Feature | Debugger stack | nvim-dap, nvim-dap-ui, nvim-dap-virtual-text, mason-nvim-dap |
 | Feature | Theme | Catppuccin (`mocha`) |
 | Feature | `ripgrep` | Recommended for Telescope `live_grep` |
 | Command | `:NeoTUIAIProvider` | Provider/auth menu: switch `opencode`/`codeium`, OpenCode login/status, show status |
@@ -138,6 +141,10 @@ Default setup applied at install time:
 | Keybind | `Ctrl+k` | Open auth/provider/model-aware AI prompt label and insert generated code at cursor |
 | Keybind | `<leader>ap` | Open AI provider/auth menu |
 | Keybind | `<leader>am` | Open AI model selector (`opencode models`) |
+| Keybind | `<leader>db` | Toggle debugger breakpoint |
+| Keybind | `<leader>dc` | Start/continue debugger |
+| Keybind | `<leader>di` / `<leader>do` / `<leader>dO` | Step into / over / out |
+| Keybind | `<leader>du` | Toggle debugger UI window panes |
 | Feature | Tabline | Always visible, including single-tab sessions |
 | Feature | Neo-tree explorer plugin | Sticky across tabs when enabled |
 | Keybind | `<leader>e` | Toggle Neo-tree sticky visibility |
@@ -228,9 +235,11 @@ Subcommands:
 | Command | `neotui clipboard status` | Prints effective clipboard toggle state |
 | Feature | Default IDE LSPs | `bashls`, `jsonls`, `lua_ls`, `marksman`, `taplo`, `yamlls`, `ts_ls`, `rust_analyzer`, `gopls` |
 | Feature | AI prompt insertion prompt | Installer default is `Yes` (IDE profile only) |
+| Feature | Debugger prompt | Installer default is `Yes` (IDE profile only) |
 | Keybind | `<leader>fm` | Format current file manually |
 | Feature | Format coverage | bash/sh/zsh/lua/json/jsonc/markdown/toml/yaml/html/css/scss/javascript/typescript/jsx/tsx/python/rust/go |
 | Feature | IDE profile contents | lazy.nvim, built-in LSPs, blink.cmp, LuaSnip, telescope, gitsigns, formatting/linting, codeium |
+| Feature | Debugger stack | nvim-dap, nvim-dap-ui, nvim-dap-virtual-text, mason-nvim-dap |
 | Feature | Theme | Catppuccin (`mocha`) |
 | Feature | `ripgrep` | Recommended for Telescope `live_grep` |
 | Command | `:NeoTUIAIProvider` | Provider/auth menu: switch `opencode`/`codeium`, OpenCode login/status, show status |
@@ -245,6 +254,10 @@ Subcommands:
 | Keybind | `Ctrl+k` | Open auth/provider/model-aware AI prompt label and insert generated code at cursor |
 | Keybind | `<leader>ap` | Open AI provider/auth menu |
 | Keybind | `<leader>am` | Open AI model selector (`opencode models`) |
+| Keybind | `<leader>db` | Toggle debugger breakpoint |
+| Keybind | `<leader>dc` | Start/continue debugger |
+| Keybind | `<leader>di` / `<leader>do` / `<leader>dO` | Step into / over / out |
+| Keybind | `<leader>du` | Toggle debugger UI window panes |
 | Feature | Tabline | Always visible, including single-tab sessions |
 | Feature | Neo-tree explorer plugin | Sticky across tabs when enabled |
 | Keybind | `<leader>e` | Toggle Neo-tree sticky visibility |

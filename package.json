@@ -5,9 +5,13 @@
   "description": "Minimal local-first TUI baseline for tmux, zsh, and neovim",
   "scripts": {
     "prepare": "husky",
-    "check:shell": "bash scripts/check-shell.sh"
+    "check:shell": "bash scripts/check-shell.sh",
+    "check:lua": "bash scripts/check-lua.sh"
   },
   "devDependencies": {
     "husky": "^9.1.7"
+  },
+  "dependencies": {
+    "luacheck": "^0.1.2"
   }
 }

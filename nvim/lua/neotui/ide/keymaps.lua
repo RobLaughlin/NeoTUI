@@ -3,7 +3,9 @@ local M = {}
 function M.setup()
   local state_root = vim.env.XDG_STATE_HOME or vim.fn.stdpath("state")
   local ai_prompt_disabled_flag = state_root .. "/nvim/ai-prompt-insertion-disabled"
+  local debugger_disabled_flag = state_root .. "/nvim/debugger-disabled"
   local ai_prompt_enabled = vim.fn.filereadable(ai_prompt_disabled_flag) ~= 1
+  local debugger_enabled = vim.fn.filereadable(debugger_disabled_flag) ~= 1
 
   vim.keymap.set("n", "<leader>w", "<cmd>w<cr>", { desc = "Write file" })
   vim.keymap.set("n", "<leader>q", "<cmd>q<cr>", { desc = "Quit window" })
@@ -45,14 +47,39 @@ function M.setup()
     end, { silent = true, desc = "AI prompt insert" })
   end
 
+  if debugger_enabled then
+    vim.keymap.set("n", "<leader>db", function()
+      require("dap").toggle_breakpoint()
+    end, { silent = true, desc = "Debug toggle breakpoint" })
+    vim.keymap.set("n", "<leader>dc", function()
+      require("dap").continue()
+    end, { silent = true, desc = "Debug continue" })
+    vim.keymap.set("n", "<leader>di", function()
+      require("dap").step_into()
+    end, { silent = true, desc = "Debug step into" })
+    vim.keymap.set("n", "<leader>do", function()
+      require("dap").step_over()
+    end, { silent = true, desc = "Debug step over" })
+    vim.keymap.set("n", "<leader>dO", function()
+      require("dap").step_out()
+    end, { silent = true, desc = "Debug step out" })
+    vim.keymap.set("n", "<leader>du", function()
+      require("dapui").toggle()
+    end, { silent = true, desc = "Debug UI toggle" })
+  end
+
   vim.api.nvim_create_autocmd("LspAttach", {
     callback = function(event)
       local opts = { buffer = event.buf }
-      vim.keymap.set("n", "gd", vim.lsp.buf.definition, vim.tbl_extend("force", opts, { desc = "Goto definition" }))
-      vim.keymap.set("n", "gr", vim.lsp.buf.references, vim.tbl_extend("force", opts, { desc = "Goto references" }))
-      vim.keymap.set("n", "K", vim.lsp.buf.hover, vim.tbl_extend("force", opts, { desc = "Hover" }))
-      vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, vim.tbl_extend("force", opts, { desc = "Rename" }))
-      vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, vim.tbl_extend("force", opts, { desc = "Code action" }))
+      local function map(lhs, rhs, desc)
+        vim.keymap.set("n", lhs, rhs, vim.tbl_extend("force", opts, { desc = desc }))
+      end
+
+      map("gd", vim.lsp.buf.definition, "Goto definition")
+      map("gr", vim.lsp.buf.references, "Goto references")
+      map("K", vim.lsp.buf.hover, "Hover")
+      map("<leader>rn", vim.lsp.buf.rename, "Rename")
+      map("<leader>ca", vim.lsp.buf.code_action, "Code action")
     end,
   })
 end

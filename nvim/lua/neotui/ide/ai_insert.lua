@@ -4,14 +4,12 @@ local PROVIDERS = { "opencode", "codeium" }
 local DEFAULT_PROVIDER = "codeium"
 local OPENCODE_DEFAULT_MODEL = "openai/gpt-5.3-codex"
 local OPENCODE_FILE_SESSIONS_FILE = "ai-opencode-file-sessions.json"
-local STATE_ROOT = (vim.uv and vim.uv.os_getenv and vim.uv.os_getenv("XDG_STATE_HOME")) or os.getenv("XDG_STATE_HOME") or vim.fn.stdpath("state")
+local STATE_ROOT = (vim.uv and vim.uv.os_getenv and vim.uv.os_getenv("XDG_STATE_HOME"))
+  or os.getenv("XDG_STATE_HOME")
+  or vim.fn.stdpath("state")
 local STATE_DIR = STATE_ROOT .. "/nvim"
 local opencode_buffer_sessions = {}
 local decode_json
-
-local function state_root()
-  return STATE_ROOT
-end
 
 local function state_dir()
   vim.fn.mkdir(STATE_DIR, "p")
@@ -207,7 +205,14 @@ local function insert_generated(bufnr, target_cursor, generated)
   end
 
   local insert_lines = vim.split(cleaned, "\n", { plain = true })
-  vim.api.nvim_buf_set_text(bufnr, target_cursor[1] - 1, target_cursor[2], target_cursor[1] - 1, target_cursor[2], insert_lines)
+  vim.api.nvim_buf_set_text(
+    bufnr,
+    target_cursor[1] - 1,
+    target_cursor[2],
+    target_cursor[1] - 1,
+    target_cursor[2],
+    insert_lines
+  )
 end
 
 local function get_comment_prefix(filetype)
@@ -324,14 +329,6 @@ local function prompt_with_context(bufnr, target_cursor, user_prompt)
   return table.concat(message, "\n")
 end
 
-local function opencode_available()
-  if vim.fn.executable("opencode") == 1 then
-    return true
-  end
-  local fallback = vim.fn.expand("~/.opencode/bin/opencode")
-  return vim.fn.executable(fallback) == 1
-end
-
 local function opencode_cmd()
   if vim.fn.executable("opencode") == 1 then
     return "opencode"
@@ -424,13 +421,21 @@ local function codeium_prompt_insert(prompt, bufnr, target_cursor)
   local ok_codeium, codeium = pcall(require, "codeium")
   local ok_api, codeium_api = pcall(require, "codeium.api")
   if not ok_codeium or not ok_api or not codeium.s then
-    vim.notify("Codeium is not ready. Restart nvim and run :Codeium Auth. Switch provider with :NeoTUIAIProvider or <leader>ap.", vim.log.levels.WARN)
+    vim.notify(
+      "Codeium is not ready. Restart nvim and run :Codeium Auth. "
+        .. "Switch provider with :NeoTUIAIProvider or <leader>ap.",
+      vim.log.levels.WARN
+    )
     return
   end
 
   local status = codeium_api.check_status()
   if status and status.api_key_error then
-    vim.notify("Codeium is not authenticated. Run :Codeium Auth. Switch provider with :NeoTUIAIProvider or <leader>ap.", vim.log.levels.WARN)
+    vim.notify(
+      "Codeium is not authenticated. Run :Codeium Auth. "
+        .. "Switch provider with :NeoTUIAIProvider or <leader>ap.",
+      vim.log.levels.WARN
+    )
     return
   end
 
@@ -485,14 +490,22 @@ end
 local function opencode_prompt_insert(prompt, bufnr, target_cursor)
   local cmd = opencode_cmd()
   if not cmd then
-    vim.notify("opencode is not installed. Install it or switch provider to codeium with :NeoTUIAIProvider.", vim.log.levels.WARN)
+    vim.notify(
+      "opencode is not installed. Install it or switch provider "
+        .. "to codeium with :NeoTUIAIProvider.",
+      vim.log.levels.WARN
+    )
     return
   end
 
   opencode_auth_status(function(authenticated)
     if not authenticated then
       vim.schedule(function()
-        vim.notify("OpenCode is not authenticated. Run :NeoTUIAIProvider and choose OpenCode login.", vim.log.levels.WARN)
+        vim.notify(
+          "OpenCode is not authenticated. "
+            .. "Run :NeoTUIAIProvider and choose OpenCode login.",
+          vim.log.levels.WARN
+        )
       end)
       return
     end
@@ -634,7 +647,13 @@ function M.show_status()
   local provider = get_active_provider()
   if provider == "codeium" then
     local auth = codeium_is_ready() and "ready" or "unauthenticated"
-    vim.notify("AI prompt provider: codeium (model: auto/default)\nAuth: " .. auth .. "\nSwitch provider: :NeoTUIAIProvider / <leader>ap", vim.log.levels.INFO)
+    vim.notify(
+      "AI prompt provider: codeium (model: auto/default)\n"
+        .. "Auth: "
+        .. auth
+        .. "\nSwitch provider: :NeoTUIAIProvider / <leader>ap",
+      vim.log.levels.INFO
+    )
     return
   end
 
@@ -643,7 +662,18 @@ function M.show_status()
       local auth = authenticated and "ready" or "unauthenticated"
       local model = get_model("opencode")
       local model_provider, model_name = model_parts(model)
-      vim.notify("AI prompt provider: opencode\nModel route: " .. model_provider .. "/" .. model_name .. "\nAuth: " .. auth .. "\nSwitch provider: :NeoTUIAIProvider / <leader>ap\nChange model: :NeoTUIAIModel / <leader>am", vim.log.levels.INFO)
+      vim.notify(
+        "AI prompt provider: opencode\n"
+          .. "Model route: "
+          .. model_provider
+          .. "/"
+          .. model_name
+          .. "\nAuth: "
+          .. auth
+          .. "\nSwitch provider: :NeoTUIAIProvider / <leader>ap"
+          .. "\nChange model: :NeoTUIAIModel / <leader>am",
+        vim.log.levels.INFO
+      )
     end)
   end)
 end
@@ -680,7 +710,11 @@ function M.select_provider()
 
         if set_active_provider(provider_choice) then
           if provider_choice == "opencode" then
-            vim.notify("AI prompt provider set to opencode. Use OpenCode login from :NeoTUIAIProvider if needed.", vim.log.levels.INFO)
+            vim.notify(
+              "AI prompt provider set to opencode. "
+                .. "Use OpenCode login from :NeoTUIAIProvider if needed.",
+              vim.log.levels.INFO
+            )
           else
             vim.notify("AI prompt provider set to codeium. Run :Codeium Auth if needed.", vim.log.levels.INFO)
           end
@@ -712,7 +746,11 @@ end
 function M.select_model()
   local provider = get_active_provider()
   if provider == "codeium" then
-    vim.notify("Codeium prompt insertion uses auto/default model. Switch provider with :NeoTUIAIProvider or <leader>ap for model selection.", vim.log.levels.INFO)
+    vim.notify(
+      "Codeium prompt insertion uses auto/default model. "
+        .. "Switch provider with :NeoTUIAIProvider or <leader>ap for model selection.",
+      vim.log.levels.INFO
+    )
     return
   end
 

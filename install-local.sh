@@ -25,6 +25,7 @@ ENABLE_WSL_HOST_CLIPBOARD=0
 INSTALL_IS_WSL2=0
 ENABLE_NVIM_AI_PROMPT_INSERTION=1
 ENABLE_NVIM_OPENCODE_PROMPT_ROUTING=1
+ENABLE_NVIM_DEBUGGER=1
 CONFIG_OVERWRITE_COUNT=0
 CONFIG_KEEP_COUNT=0
 
@@ -908,6 +909,28 @@ prompt_nvim_opencode_prompt_routing() {
   fi
 }
 
+prompt_nvim_debugger() {
+  local debugger_disable_flag="$INSTALL_ROOT/state/nvim/debugger-disabled"
+  mkdir -p "$(dirname "$debugger_disable_flag")"
+
+  if [ "$ENABLE_NVIM_IDE_PROFILE" -ne 1 ]; then
+    ENABLE_NVIM_DEBUGGER=0
+    rm -f "$debugger_disable_flag"
+    printf 'Skipping nvim debugger prompt (minimal nvim profile selected).\n'
+    return 0
+  fi
+
+  if prompt_yes_no 'Enable nvim debugger features (DAP + debugger UI)? [Y/n]: ' 'y'; then
+    ENABLE_NVIM_DEBUGGER=1
+    rm -f "$debugger_disable_flag"
+    printf 'Enabled nvim debugger features.\n'
+  else
+    ENABLE_NVIM_DEBUGGER=0
+    : > "$debugger_disable_flag"
+    printf 'Disabled nvim debugger features.\n'
+  fi
+}
+
 prompt_nvim_clipboard_settings() {
   local clipboard_disable_flag="$INSTALL_ROOT/state/nvim/clipboard-sharing-disabled"
   local wsl_host_clipboard_disable_flag="$INSTALL_ROOT/state/nvim/wsl-host-clipboard-disabled"
@@ -993,6 +1016,11 @@ print_applied_defaults() {
   else
     printf '  - keybind: %bCtrl+k%b AI prompt insertion disabled by installer option\n' "$C_KEYBIND" "$C_RESET"
   fi
+  if [ "$ENABLE_NVIM_DEBUGGER" -eq 1 ]; then
+    printf '  - debugger keybinds: %b<leader>db%b (breakpoint), %b<leader>dc%b (continue), %b<leader>di/do/dO%b (step), %b<leader>du%b (debugger UI)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
+  else
+    printf '  - debugger: disabled by installer option\n'
+  fi
   printf '  - keybinds: %b<leader>e%b (toggle neo-tree), %bCtrl-w h/l%b (move explorer/editor), %bCtrl-w p%b (previous window)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
   printf '  - commands: %b:tabn%b / %b:tabp%b / %b:tabclose%b\n' "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET"
   printf '  - behavior: neo-tree %bEnter%b opens file in new nvim tab and reveals it; tabline is always visible\n' "$C_KEYBIND" "$C_RESET"
@@ -1055,6 +1083,11 @@ print_applied_defaults() {
   else
     printf '  - ai: run %b:Codeium Auth%b once in nvim to enable Codeium autocomplete\n' "$C_COMMAND" "$C_RESET"
   fi
+  if [ "$ENABLE_NVIM_DEBUGGER" -eq 1 ]; then
+    printf '  - debugger: enabled (nvim-dap + dap-ui + virtual-text; adapters via Mason)\n'
+  else
+    printf '  - debugger: disabled (installer prompt controlled, default: enabled)\n'
+  fi
   printf '\n'
 }
 
@@ -1074,6 +1107,7 @@ prompt_nvim_ide_profile
 prompt_nvim_format_on_save
 prompt_nvim_ai_prompt_insertion
 prompt_nvim_opencode_prompt_routing
+prompt_nvim_debugger
 prompt_nvim_clipboard_settings
 ensure_formatter_prereqs
 

@@ -85,6 +85,7 @@ usage() {
   printf '  - keybinds: %bS-Tab%b (Codeium accept), %bC-y%b (Codeium accept fallback), %bC-g%b (Codeium accept line)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
   printf '  - keybind: %bCtrl+k%b opens AI prompt with auth/provider/model label and inserts generated code at cursor (installer-managed, default enabled)\n' "$C_KEYBIND" "$C_RESET"
   printf '  - keybinds: %b<leader>ap%b opens AI provider/auth menu, %b<leader>am%b opens AI model selector\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
+  printf '  - debugger keybinds: %b<leader>db%b (breakpoint), %b<leader>dc%b (continue), %b<leader>di/do/dO%b (step), %b<leader>du%b (debugger UI)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
   printf '  - keybinds: %b<leader>e%b (toggle neo-tree), %bCtrl-w h/l%b (move explorer/editor), %bCtrl-w p%b (previous window)\n' "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET" "$C_KEYBIND" "$C_RESET"
   printf '  - commands: %b:tabn%b / %b:tabp%b / %b:tabclose%b\n' "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET"
   printf '  - behavior: neo-tree %bEnter%b opens file in new nvim tab and reveals it; tabline is always visible\n' "$C_KEYBIND" "$C_RESET"
@@ -92,11 +93,13 @@ usage() {
   printf '  - explorer: neo-tree sticky mode toggled with %b<leader>e%b; commands %b:NeoTUIExplorerEnable%b / %b:NeoTUIExplorerDisable%b / %b:NeoTUIExplorerToggle%b\n' "$C_KEYBIND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET"
   printf '  - ai prompt controls: %b:NeoTUIAIProvider%b (switch), %b:NeoTUIAIModel%b (model), %b:NeoTUIAIStatus%b (status)\n' "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET" "$C_COMMAND" "$C_RESET"
   printf '  - profile: installer-managed recommended IDE mode (default enabled)\n'
+  printf '  - debugger profile: installer-managed DAP features (default enabled in IDE profile)\n'
   printf '  - format on save: installer-managed in IDE mode (default enabled)\n'
   printf '  - clipboard sharing: %bneotui clipboard nvim enable|disable%b\n' "$C_COMMAND" "$C_RESET"
   printf '  - WSL2 host clipboard bridge: %bneotui clipboard wsl2 enable|disable%b (WSL2 only)\n' "$C_COMMAND" "$C_RESET"
   printf '  - default IDE LSPs: bashls, jsonls, lua_ls, marksman, taplo, yamlls, ts_ls, rust_analyzer, gopls\n'
   printf '  - IDE includes: lazy.nvim, blink.cmp, LuaSnip, telescope, gitsigns, conform+nvim-lint, codeium\n'
+  printf '  - debugger includes: nvim-dap, nvim-dap-ui, nvim-dap-virtual-text, mason-nvim-dap\n'
   printf '  - ai: run %b:Codeium Auth%b once in nvim to enable Codeium autocomplete\n' "$C_COMMAND" "$C_RESET"
   printf '  - ai prompt default: OpenCode provider routing when enabled by installer (falls back to Codeium provider)\n'
   printf '  - ai prompt switch: %b<leader>ap%b or %b:NeoTUIAIProvider%b\n' "$C_KEYBIND" "$C_RESET" "$C_COMMAND" "$C_RESET"

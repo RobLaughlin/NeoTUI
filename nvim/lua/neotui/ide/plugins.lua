@@ -18,7 +18,9 @@ local servers = {
 
 local state_root = vim.env.XDG_STATE_HOME or vim.fn.stdpath("state")
 local format_on_save_disabled_flag = state_root .. "/nvim/format-on-save-disabled"
+local debugger_disabled_flag = state_root .. "/nvim/debugger-disabled"
 local format_on_save_enabled = vim.fn.filereadable(format_on_save_disabled_flag) ~= 1
+local debugger_enabled = vim.fn.filereadable(debugger_disabled_flag) ~= 1
 
 local function python_mason_ready()
   if vim.fn.executable("python3") ~= 1 then
@@ -34,7 +36,7 @@ local function python_mason_ready()
   return vim.v.shell_error == 0
 end
 
-return {
+local plugins = {
   {
     "catppuccin/nvim",
     name = "catppuccin",
@@ -255,3 +257,101 @@ return {
     end,
   },
 }
+
+if debugger_enabled then
+  plugins[#plugins + 1] = {
+    "mfussenegger/nvim-dap",
+    dependencies = {
+      "rcarriga/nvim-dap-ui",
+      "nvim-neotest/nvim-nio",
+      "theHamsta/nvim-dap-virtual-text",
+      "jay-babu/mason-nvim-dap.nvim",
+      "williamboman/mason.nvim",
+    },
+    config = function()
+      local dap = require("dap")
+      local dapui = require("dapui")
+
+      require("nvim-dap-virtual-text").setup({})
+      dapui.setup({})
+
+      local ok_registry, registry = pcall(require, "mason-registry")
+
+      require("mason-nvim-dap").setup({
+        ensure_installed = { "python", "delve" },
+        automatic_installation = true,
+      })
+
+      local debugpy_python = vim.fn.exepath("python3")
+      if ok_registry and registry.has_package("debugpy") then
+        local debugpy = registry.get_package("debugpy")
+        if debugpy:is_installed() then
+          local candidate = debugpy:get_install_path() .. "/venv/bin/python"
+          if vim.fn.executable(candidate) == 1 then
+            debugpy_python = candidate
+          end
+        end
+      end
+
+      dap.adapters.python = {
+        type = "executable",
+        command = debugpy_python,
+        args = { "-m", "debugpy.adapter" },
+      }
+
+      local dlv_cmd = vim.fn.exepath("dlv")
+      if dlv_cmd == "" and ok_registry and registry.has_package("delve") then
+        local delve = registry.get_package("delve")
+        if delve:is_installed() then
+          local candidate = delve:get_install_path() .. "/dlv"
+          if vim.fn.executable(candidate) == 1 then
+            dlv_cmd = candidate
+          end
+        end
+      end
+      if dlv_cmd == "" then
+        dlv_cmd = "dlv"
+      end
+
+      dap.adapters.delve = {
+        type = "server",
+        port = "${port}",
+        executable = {
+          command = dlv_cmd,
+          args = { "dap", "-l", "127.0.0.1:${port}" },
+        },
+      }
+
+      dap.configurations.python = {
+        {
+          type = "python",
+          request = "launch",
+          name = "Debug current file",
+          program = "${file}",
+          console = "integratedTerminal",
+        },
+      }
+
+      dap.configurations.go = {
+        {
+          type = "delve",
+          name = "Debug current file",
+          request = "launch",
+          program = "${file}",
+        },
+      }
+
+      dap.listeners.after.event_initialized["neotui_dapui"] = function()
+        dapui.open()
+      end
+      dap.listeners.before.event_terminated["neotui_dapui"] = function()
+        dapui.close()
+      end
+      dap.listeners.before.event_exited["neotui_dapui"] = function()
+        dapui.close()
+      end
+    end,
+  }
+end
+
+return plugins

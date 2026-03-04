@@ -2,3 +2,4 @@
 set -eu
 
 npm run check:shell
+npm run check:lua
